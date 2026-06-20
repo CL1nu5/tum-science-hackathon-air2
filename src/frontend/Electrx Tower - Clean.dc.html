@@ -223,11 +223,9 @@
       <div style="position:absolute;bottom:14px;left:16px;background:rgba(255,255,255,.9);border:1px solid #e3e7ec;border-radius:8px;padding:11px 13px;backdrop-filter:blur(6px);box-shadow:0 4px 16px rgba(30,50,80,.06);pointer-events:none">
         <div style="font-size:8.5px;font-family:'IBM Plex Mono',monospace;letter-spacing:1.5px;color:#9aa6b3;margin-bottom:8px">LEGEND</div>
         <div style="display:grid;grid-template-columns:auto auto;gap:6px 18px">
-          <div style="display:flex;align-items:center;gap:7px"><span style="width:14px;height:2px;background:#6557d6;display:inline-block"></span><span style="font-size:9.5px;color:#5a6878">4D corridor</span></div>
+          <div style="display:flex;align-items:center;gap:7px"><span style="width:14px;height:2px;background:#6557d6;display:inline-block"></span><span style="font-size:9.5px;color:#5a6878">Live route</span></div>
           <div style="display:flex;align-items:center;gap:7px"><span style="width:8px;height:8px;background:#2f6df0;border-radius:2px;display:inline-block"></span><span style="font-size:9.5px;color:#5a6878">Air-taxi</span></div>
           <div style="display:flex;align-items:center;gap:7px"><span style="width:9px;height:9px;border:1.5px solid #2f6df0;border-radius:2px;display:inline-block"></span><span style="font-size:9.5px;color:#5a6878">Vertiport</span></div>
-          <div style="display:flex;align-items:center;gap:7px"><span style="width:9px;height:9px;border-radius:50%;background:rgba(217,138,22,.4);display:inline-block"></span><span style="font-size:9.5px;color:#5a6878">Prepared surf.</span></div>
-          <div style="display:flex;align-items:center;gap:7px"><span style="width:9px;height:9px;border-radius:50%;background:rgba(214,70,58,.45);display:inline-block"></span><span style="font-size:9.5px;color:#5a6878">Open field</span></div>
           <div style="display:flex;align-items:center;gap:7px"><span style="width:14px;height:2px;background:#d6463a;display:inline-block"></span><span style="font-size:9.5px;color:#5a6878">V2V conflict</span></div>
         </div>
       </div>
@@ -261,7 +259,7 @@
           <div style="padding:14px 18px;display:grid;grid-template-columns:1fr 1fr;gap:14px 12px;border-bottom:1px solid #eef1f4">
             <div><div style="font-size:8.5px;color:#9aa6b3;font-family:'IBM Plex Mono',monospace;letter-spacing:1px;margin-bottom:3px">GROUND SPD</div><div style="font-size:15px;color:#1d2a3a;font-family:'IBM Plex Mono',monospace">{{ sel.speed }}<span style="font-size:9px;color:#9aa6b3"> km/h</span></div></div>
             <div><div style="font-size:8.5px;color:#9aa6b3;font-family:'IBM Plex Mono',monospace;letter-spacing:1px;margin-bottom:3px">ALTITUDE</div><div style="font-size:15px;color:#1d2a3a;font-family:'IBM Plex Mono',monospace">{{ sel.altitude }}<span style="font-size:9px;color:#9aa6b3"> m</span></div></div>
-            <div><div style="font-size:8.5px;color:#9aa6b3;font-family:'IBM Plex Mono',monospace;letter-spacing:1px;margin-bottom:3px">CORRIDOR</div><div style="font-size:13px;color:#6557d6;font-family:'IBM Plex Mono',monospace">{{ sel.corridorLabel }}</div></div>
+            <div><div style="font-size:8.5px;color:#9aa6b3;font-family:'IBM Plex Mono',monospace;letter-spacing:1px;margin-bottom:3px">SECTOR</div><div style="font-size:13px;color:#6557d6;font-family:'IBM Plex Mono',monospace">{{ sel.sectorLabel }}</div></div>
             <div><div style="font-size:8.5px;color:#9aa6b3;font-family:'IBM Plex Mono',monospace;letter-spacing:1px;margin-bottom:3px">SLOT STAGE</div><div style="font-size:13px;color:{{ sel.stageColor }};font-family:'IBM Plex Mono',monospace">{{ sel.slotStage }}</div></div>
             <div><div style="font-size:8.5px;color:#9aa6b3;font-family:'IBM Plex Mono',monospace;letter-spacing:1px;margin-bottom:3px">DESTINATION</div><div style="font-size:13px;color:#1d2a3a;font-family:'IBM Plex Mono',monospace">{{ sel.destName }}</div></div>
             <div><div style="font-size:8.5px;color:#9aa6b3;font-family:'IBM Plex Mono',monospace;letter-spacing:1px;margin-bottom:3px">ETA (slot)</div><div style="font-size:15px;color:#2f6df0;font-family:'IBM Plex Mono',monospace">{{ sel.etaStr }}</div></div>
@@ -329,6 +327,26 @@
   </div>
 </div>
 </x-dc>
+<!-- Inline fallback copy of landing-pads.csv so the app works when opened via file:// (where fetch() is blocked). Keep byte-identical to landing-pads.csv. -->
+<script type="text/plain" id="landing-pads-csv">name,short,lat,lon,stands
+Klinikum rechts der Isar,RDI,48.1370,11.5996,2
+Klinikum Großhadern,GRH,48.1108,11.4700,2
+München Klinik Schwabing,SWB,48.1786,11.5707,2
+München Klinik Bogenhausen,BOG,48.1530,11.6360,2
+München Klinik Harlaching,HAR,48.0915,11.5565,2
+TUM City,TUM,48.1496,11.5680,4
+TUM Garching,GAR,48.2648,11.6715,5
+BMW Englischer Garten,BEG,48.1642,11.6020,3
+Messestadt Ost,MSO,48.1340,11.6960,4
+LMU,LMU,48.1505,11.5805,4
+BMW Tower,BMT,48.1767,11.5586,4
+Airport Munich,MUC,48.3538,11.7861,6
+Allianz Arena,ARE,48.2188,11.6247,5
+Pasing,PAS,48.1502,11.4612,4
+Ostbahnhof,OST,48.1270,11.6048,4
+Siemens Werke,SIE,48.0853,11.6363,4
+Grünwald,GRW,48.0707,11.5267,3
+</script>
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;},&quot;simSpeed&quot;:{&quot;editor&quot;:&quot;float&quot;,&quot;default&quot;:1,&quot;min&quot;:0.25,&quot;max&quot;:3,&quot;step&quot;:0.25,&quot;tsType&quot;:&quot;number&quot;},&quot;fleetSize&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:16,&quot;min&quot;:4,&quot;max&quot;:24,&quot;step&quot;:1,&quot;tsType&quot;:&quot;number&quot;},&quot;trackLabels&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
 class Component extends DCLogic {
   constructor(props){
@@ -343,8 +361,8 @@ class Component extends DCLogic {
       grid:'rgba(40,70,110,0.04)'
     };
     this.state = { layers:{
-      heatmap:true, paths:true, flow:true,
-      collisions:true, energy:true, emergency:true,
+      heatmap:true, paths:true,
+      collisions:true, energy:true,
       vertiports:true, zones:true, weather:true
     }};
     this.selectedId = null;
@@ -361,9 +379,10 @@ class Component extends DCLogic {
     this.simTime = 0;
     this.emgTimer = 10;
     this.t = 0;
-    this.buildWorld();
-    this.initTaxis();
-    this.seedEvents();
+    // pad-dependent state starts empty; filled asynchronously in _init() once the CSV loads
+    this.vertiports = []; this.taxis = []; this.sectors = null; this.nav = null;
+    this.buildWorld();   // map projection, tiles, surfaces, zones, weather, heat (no pads)
+    this._init();        // async: load landing-pads.csv -> build pads/airspace -> taxis -> events
 
     this.refCanvas = (el)=>{ this.canvas = el; if(el) this._setupCanvas(); };
     this.refMap = (el)=>{ this.mapEl = el; };
@@ -386,7 +405,7 @@ class Component extends DCLogic {
   buildWorld(){
     this.airspaceName = 'MÜNCHEN METRO';
     const Z=13; this.tileZ=Z;
-    const lonMin=11.440, lonMax=11.800, latMin=48.035, latMax=48.285;
+    const lonMin=11.440, lonMax=11.800, latMin=48.035, latMax=48.370; // latMax extended north to include Munich Airport (48.354)
     const lon2x=(lon)=>(lon+180)/360*Math.pow(2,Z)*256;
     const lat2y=(lat)=>{ const s=Math.sin(lat*Math.PI/180); return (0.5 - Math.log((1+s)/(1-s))/(4*Math.PI))*Math.pow(2,Z)*256; };
     const gx0=lon2x(lonMin), gy0=lat2y(latMax);
@@ -407,75 +426,51 @@ class Component extends DCLogic {
     this.mapReady=false;
     this._loadTiles(Z,gx0,gy0,gxMax,gyMax);
 
-    // vertiports at real Munich locations  [name, short, lat, lon, stands]
-    const vps=[
-      ['Marienplatz','MAR',48.1372,11.5756,4],
-      ['Hauptbahnhof','HBF',48.1402,11.5600,5],
-      ['Olympiapark','OLY',48.1698,11.5516,4],
-      ['Englischer Garten','ENG',48.1642,11.6020,3],
-      ['Ostbahnhof','OST',48.1270,11.6048,4],
-      ['Messe Riem','MES',48.1351,11.6880,4],
-      ['Fröttmaning','FRÖ',48.2150,11.6247,3],
-      ['Nymphenburg','NYM',48.1583,11.5033,3],
-      ['Westpark','WES',48.1185,11.5277,4],
-      ['Harlaching','HAR',48.0985,11.5586,3],
-      ['Garching Forschungszentrum','GAR',48.2648,11.6715,5],
-      ['Theresienwiese','THW',48.1314,11.5498,6],
-      ['MTU Aero Engines','MTU',48.1922,11.4611,5],
-      ['Campus Martinsried','MRT',48.1082,11.4590,4],
-      ['Ludwig Bölkow Campus','LBC',48.0448,11.6632,6],
-      ['Schleißheim Palace','SLH',48.2486,11.5652,4],
-      ['BMW Parsdorf Innovation Campus','BMW',48.1427,11.7870,6],
-      ['Ismaning Broadcast Centre','IBC',48.2260,11.6830,4],
-    ];
-    this.vertiports=vps.map((v,i)=>{ const p=this.LL(v[3],v[2]); return {id:i,name:v[0],short:v[1],x:p.x,y:p.y,stands:v[4]}; });
+    // vertiports + corridor network are built from landing-pads.csv in _buildPads(), called from _init()
 
-    // corridor network
-    const edgeDefs=[
-      [0,1,16],[0,2,-28],[0,3,20],[0,4,-16],[0,9,28],
-      [1,7,22],[1,8,-20],[2,6,26],[2,7,-18],[3,6,22],
-      [3,4,-14],[4,5,20],[4,9,-22],[8,9,18],[7,8,-16],
-      [6,10,28],[5,10,-34],[1,11,12],[0,11,-10],[8,11,18],
-      [7,12,20],[2,12,-24],
-      [8,13,-20],[7,13,18],
-      [9,14,24],[5,14,-28],
-      [6,15,-22],[10,15,20],
-      [5,16,26],[17,16,-30],
-      [5,17,-22],[10,17,24]
-    ];
-    this.corridors=edgeDefs.map((e,i)=>{
-      const a=this.vertiports[e[0]], b=this.vertiports[e[1]], bow=e[2];
-      const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
-      const dx=b.x-a.x, dy=b.y-a.y, len=Math.hypot(dx,dy)||1;
-      const nx=-dy/len, ny=dx/len;
-      const cx=mx+nx*bow, cy=my+ny*bow;
-      const N=44, pts=[];
-      for(let k=0;k<=N;k++){ const u=k/N, om=1-u;
-        pts.push({ x:om*om*a.x+2*om*u*cx+u*u*b.x, y:om*om*a.y+2*om*u*cy+u*u*b.y }); }
-      let L=0; for(let k=1;k<pts.length;k++) L+=Math.hypot(pts[k].x-pts[k-1].x, pts[k].y-pts[k-1].y);
-      return {id:i, a:e[0], b:e[1], pts, len:L, label:'C-'+String(i+1).padStart(2,'0')};
-    });
-    this.adj=this.vertiports.map(()=>[]);
-    this.corridors.forEach((c,i)=>{ this.adj[c.a].push(i); this.adj[c.b].push(i); });
-
-    // emergency surfaces (real parks / open ground)  [type, lat, lon, r, label]
-    const surf=[
-      ['prep',48.1730,11.5560,22,'Olympia-Lawn'],
-      ['prep',48.1095,11.6260,24,'Ostpark'],
-      ['prep',48.1720,11.5760,20,'Luitpoldpark'],
-      ['field',48.1480,11.5180,36,'Hirschgarten'],
-      ['field',48.1438,11.6960,40,'Riemer Park'],
-      ['field',48.2080,11.6080,38,'Fröttmaninger Heide'],
-    ];
-    this.surfaces=surf.map(s=>{ const p=this.LL(s[2],s[1]); return {type:s[0],x:p.x,y:p.y,r:s[3],label:s[4]}; });
-
-    // zones  [kind, lat, lon, r, label]
+    // zones  [kind, label, polygon[[lat,lon],...]] — real, hand-traced OpenStreetMap
+    // footprints (irregular polygons, NOT bounding boxes), so each outline lands exactly
+    // on the matching basemap feature in the shared Web-Mercator projection. A small,
+    // deliberate set — every zone earns its place, none wraps a vertiport:
+    //   'nofly'    — hard blocks; self-routing flies around them. (A zone that encloses a
+    //                vertiport, e.g. the airport, auto-becomes controlled-access: its own
+    //                pad stays reachable while transit traffic is kept out.)
+    //   'restrict' — advisory noise / low-altitude caps; drawn but do not block routing.
     const zn=[
-      ['nofly',48.2188,11.6247,28,'NO-FLY · ARENA'],
-      ['nofly',48.1745,11.5870,24,'NO-FLY · KLINIKUM'],
-      ['restrict',48.1372,11.5756,32,'NOISE-CAP · ALTSTADT'],
+      // --- the canonical hard no-fly: the airport (controlled-access, its own pad reachable) ---
+      ['nofly','NO-FLY · MUC AIRPORT',[          // EDDM airfield perimeter, clamped to the map's north edge
+        [48.3480,11.7475],[48.3530,11.7455],[48.3640,11.7600],[48.3688,11.7830],
+        [48.3660,11.8060],[48.3495,11.8075],[48.3398,11.7945],[48.3392,11.7695],[48.3428,11.7535] ]],
+      // --- Olympiapark: major open-air event venue (stadium, concerts), Oberwiesenfeld ---
+      ['nofly','NO-FLY · OLYMPIAPARK',[
+        [48.1762,11.5448],[48.1755,11.5540],[48.1730,11.5575],[48.1685,11.5570],
+        [48.1662,11.5505],[48.1668,11.5448],[48.1715,11.5430] ]],
+      // --- Theresienwiese: Oktoberfest grounds; west edge follows the Bavariaring curve ---
+      ['nofly','NO-FLY · THERESIENWIESE',[
+        [48.1352,11.5470],[48.1350,11.5528],[48.1305,11.5530],
+        [48.1292,11.5500],[48.1296,11.5458],[48.1322,11.5445] ]],
+      // --- JVA Stadelheim: correctional facility, Giesing (security-sensitive) ---
+      ['nofly','NO-FLY · JVA STADELHEIM',[
+        [48.1022,11.5898],[48.1016,11.5958],[48.0982,11.5965],
+        [48.0972,11.5928],[48.0980,11.5885],[48.1008,11.5878] ]],
+      // --- advisory / noise-restricted (soft, drawn but do not block routing) ---
+      ['restrict','RESTRICT · ENGLISCHER GARTEN',[ // long Isar-side park, low-altitude noise advisory
+        [48.1438,11.5862],[48.1455,11.5985],[48.1570,11.6005],[48.1690,11.6008],[48.1800,11.6005],
+        [48.1810,11.5950],[48.1730,11.5895],[48.1600,11.5872],[48.1495,11.5865] ]],
+      ['restrict','NOISE-CAP · ALTSTADT',[       // old town inside the Altstadtring
+        [48.1395,11.5655], // Stachus / Karlsplatz
+        [48.1422,11.5690], // Lenbachplatz / Maximiliansplatz
+        [48.1427,11.5776], // Odeonsplatz
+        [48.1379,11.5840], // Maxmonument / Thomas-Wimmer-Ring
+        [48.1352,11.5793], // Isartorplatz
+        [48.1335,11.5675], // Sendlinger Tor
+      ]],
     ];
-    this.zones=zn.map(z=>{ const p=this.LL(z[2],z[1]); return {kind:z[0],x:p.x,y:p.y,r:z[3],label:z[4]}; });
+    this.zones=zn.map(z=>{
+      const pts=z[2].map(v=>this.LL(v[1],v[0]));
+      let cx=0,cy=0; pts.forEach(p=>{cx+=p.x;cy+=p.y;}); cx/=pts.length; cy/=pts.length;
+      return {kind:z[0], label:z[1], pts, x:cx, y:cy};
+    });
 
     // weather cell
     const w0=this.LL(11.600,48.180); this.weather={x:w0.x,y:w0.y,vx:13,vy:5,r:88};
@@ -485,6 +480,158 @@ class Component extends DCLogic {
     this.residential=res.map(r=>this.LL(r[1],r[0]));
     this.buildHeat();
   }
+
+  // ---------- LANDING PADS (loaded from landing-pads.csv) ----------
+  async _init(){
+    const pads=await this._loadPads();
+    this._buildPads(pads);   // -> this.vertiports + this.sectors + this.nav (airspace)
+    this.initTaxis();
+    this.seedEvents();
+    this.buildHeat();        // re-run now that vertiports exist (adds traffic noise-heat)
+    this.forceUpdate();
+    if(this.canvas) this._resize();
+  }
+
+  // Load the CSV from the file when served over http; fall back to the inline
+  // <script id="landing-pads-csv"> copy when opened via file:// (fetch blocked).
+  async _loadPads(){
+    try{
+      const res=await fetch('./landing-pads.csv');
+      if(!res.ok) throw new Error('http '+res.status);
+      return this._parseCsv(await res.text());
+    }catch(_){
+      const el=document.getElementById('landing-pads-csv');
+      return el ? this._parseCsv(el.textContent) : [];
+    }
+  }
+
+  // Naive CSV parser. NOTE: assumes no field contains a comma (current pad names
+  // don't). If a name with a comma is ever added, upgrade to a quoted-field parser.
+  _parseCsv(text){
+    const lines=text.replace(/\r\n?/g,'\n').split('\n').map(l=>l.trim()).filter(l=>l.length);
+    if(!lines.length) return [];
+    const first=lines[0].split(',');
+    const hasHeader=isNaN(parseFloat(first[2]));   // header row has non-numeric lat column
+    const rows=hasHeader?lines.slice(1):lines;
+    return rows.map(line=>{
+      const c=line.split(',').map(s=>s.trim());
+      return { name:c[0], short:c[1], lat:parseFloat(c[2]), lon:parseFloat(c[3]), stands:parseInt(c[4],10)||1 };
+    }).filter(p=>p.name && Number.isFinite(p.lat) && Number.isFinite(p.lon));
+  }
+
+  // Build vertiports from pads, then the airspace each taxi navigates itself:
+  // a coarse display sector grid + a fine nav grid for self-routed flight.
+  _buildPads(pads){
+    this.vertiports=pads.map((p,i)=>{ const xy=this.LL(p.lon,p.lat);
+      return {id:i, name:p.name, short:p.short, x:xy.x, y:xy.y, stands:p.stands}; });
+    this._buildAirspace();
+  }
+
+  // Airspace = labelled display sectors (shown on selection) + a fine nav grid
+  // whose cells are blocked where they fall inside/near a no-fly polygon.
+  _buildAirspace(){
+    const SC=6, SR=8;
+    this.sectors={cols:SC, rows:SR, w:this.WORLD_W/SC, h:this.WORLD_H/SR};
+    const cell=60;
+    const cols=Math.max(2,Math.ceil(this.WORLD_W/cell));
+    const rows=Math.max(2,Math.ceil(this.WORLD_H/cell));
+    const blocked=new Uint8Array(cols*rows);
+    // Hard zones block the grid — EXCEPT zones that enclose a vertiport (airport,
+    // arena). Those are controlled-access: blocking them would trap the pad, so the
+    // grid stays open there and steering alone keeps transit traffic out.
+    const blockZones=(this.zones||[]).filter(z=> z.kind==='nofly' &&
+      !(this.vertiports||[]).some(v=>this._pointInPoly(v.x,v.y,z.pts)));
+    const vpCells=new Set((this.vertiports||[]).map(v=>{
+      const cx=Math.max(0,Math.min(cols-1,Math.floor(v.x/cell)));
+      const cy=Math.max(0,Math.min(rows-1,Math.floor(v.y/cell))); return cy*cols+cx; }));
+    const margin=cell*0.5;
+    for(let cy=0;cy<rows;cy++) for(let cx=0;cx<cols;cx++){
+      const idx=cy*cols+cx; if(vpCells.has(idx)) continue;
+      const px=(cx+0.5)*cell, py=(cy+0.5)*cell;
+      for(const z of blockZones){ if(this._pointInPoly(px,py,z.pts) || this._polyDist(px,py,z.pts)<margin){ blocked[idx]=1; break; } }
+    }
+    this.nav={cols,rows,cell,blocked};
+  }
+
+  // ---------- polygon geometry (no-fly avoidance) ----------
+  _pointInPoly(x,y,pts){ let inside=false;
+    for(let i=0,j=pts.length-1;i<pts.length;j=i++){ const xi=pts[i].x,yi=pts[i].y,xj=pts[j].x,yj=pts[j].y;
+      if(((yi>y)!==(yj>y)) && (x < (xj-xi)*(y-yi)/(yj-yi)+xi)) inside=!inside; } return inside; }
+  _segDist(px,py,ax,ay,bx,by){ const dx=bx-ax,dy=by-ay,l2=dx*dx+dy*dy;
+    let t=l2? ((px-ax)*dx+(py-ay)*dy)/l2 : 0; t=Math.max(0,Math.min(1,t));
+    return Math.hypot(px-(ax+dx*t), py-(ay+dy*t)); }
+  _polyDist(x,y,pts){ let m=1e9; for(let i=0,j=pts.length-1;i<pts.length;j=i++)
+    m=Math.min(m,this._segDist(x,y,pts[j].x,pts[j].y,pts[i].x,pts[i].y)); return m; }
+
+  // ---------- self-routing (A* over the nav grid) ----------
+  // The aircraft computes its own course around no-fly polygons; the result is a
+  // short list of waypoints it then flies between with steering vectors.
+  _routeTo(sx,sy,gx,gy){
+    const nav=this.nav; if(!nav) return [{x:sx,y:sy},{x:gx,y:gy}];
+    const {cols,rows,cell,blocked}=nav, N=cols*rows;
+    const cidx=(x,y)=>{ const cx=Math.max(0,Math.min(cols-1,Math.floor(x/cell)));
+      const cy=Math.max(0,Math.min(rows-1,Math.floor(y/cell))); return cy*cols+cx; };
+    const start=cidx(sx,sy), goal=cidx(gx,gy);
+    if(start===goal) return this._simplify([{x:sx,y:sy},{x:gx,y:gy}]);
+    const gx0=goal%cols, gy0=(goal/cols)|0;
+    const g=new Float64Array(N).fill(Infinity); g[start]=0;
+    const f=new Float64Array(N).fill(Infinity); f[start]=Math.hypot(start%cols-gx0,((start/cols)|0)-gy0);
+    const came=new Int32Array(N).fill(-1);
+    const open=[start], inOpen=new Uint8Array(N); inOpen[start]=1;
+    let found=false;
+    while(open.length){
+      let bi=0; for(let k=1;k<open.length;k++) if(f[open[k]]<f[open[bi]]) bi=k;
+      const cur=open.splice(bi,1)[0]; inOpen[cur]=0;
+      if(cur===goal){ found=true; break; }
+      const cx=cur%cols, cy=(cur/cols)|0;
+      for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){
+        if(!dx&&!dy) continue; const nx=cx+dx, ny=cy+dy;
+        if(nx<0||ny<0||nx>=cols||ny>=rows) continue;
+        const nidx=ny*cols+nx; if(blocked[nidx]) continue;
+        if(dx&&dy && (blocked[cy*cols+nx]||blocked[ny*cols+cx])) continue; // no corner cutting
+        const ng=g[cur]+((dx&&dy)?1.41421:1);
+        if(ng<g[nidx]){ g[nidx]=ng; came[nidx]=cur; f[nidx]=ng+Math.hypot(nx-gx0,ny-gy0);
+          if(!inOpen[nidx]){ open.push(nidx); inOpen[nidx]=1; } }
+      }
+    }
+    if(!found) return this._simplify([{x:sx,y:sy},{x:gx,y:gy}]); // no route -> fly direct
+    const cells=[]; for(let c=goal;c!==-1;c=came[c]) cells.push(c); cells.reverse();
+    const pts=cells.map(idx=>({x:((idx%cols)+0.5)*cell, y:(((idx/cols)|0)+0.5)*cell}));
+    pts[0]={x:sx,y:sy}; pts[pts.length-1]={x:gx,y:gy};
+    return this._simplify(pts);
+  }
+  // string-pulling: collapse the cell path to the fewest waypoints with clear sight-lines
+  _simplify(pts){ if(pts.length<=2) return pts;
+    const out=[pts[0]]; let i=0;
+    while(i<pts.length-1){ let j=pts.length-1;
+      for(; j>i+1; j--){ if(this._lineClear(pts[i].x,pts[i].y,pts[j].x,pts[j].y)) break; }
+      out.push(pts[j]); i=j; }
+    return out; }
+  _lineClear(ax,ay,bx,by){ const nav=this.nav; if(!nav) return true;
+    const {cols,rows,cell,blocked}=nav; const d=Math.hypot(bx-ax,by-ay);
+    const steps=Math.max(1,Math.ceil(d/(cell*0.5)));
+    for(let s=0;s<=steps;s++){ const t=s/steps, x=ax+(bx-ax)*t, y=ay+(by-ay)*t;
+      const cx=Math.floor(x/cell), cy=Math.floor(y/cell);
+      if(cx<0||cy<0||cx>=cols||cy>=rows) continue;
+      if(blocked[cy*cols+cx]) return false; }
+    return true; }
+
+  _assignRoute(t,gx,gy){ t.route=this._routeTo(t.x,t.y,gx,gy); t.wp=Math.min(1,t.route.length-1); }
+  // advance a freshly-routed taxi to a fraction of its route (so the scene starts mid-flight)
+  _seedProgress(t,frac){ const r=t.route; if(!r||r.length<2){ t.wp=0; return; }
+    let total=0; for(let k=1;k<r.length;k++) total+=Math.hypot(r[k].x-r[k-1].x,r[k].y-r[k-1].y);
+    let target=total*Math.max(0,Math.min(0.7,frac)), acc=0;
+    for(let k=1;k<r.length;k++){ const seg=Math.hypot(r[k].x-r[k-1].x,r[k].y-r[k-1].y)||1;
+      if(acc+seg>=target){ const tt=(target-acc)/seg;
+        t.x=r[k-1].x+(r[k].x-r[k-1].x)*tt; t.y=r[k-1].y+(r[k].y-r[k-1].y)*tt;
+        t.hx=(r[k].x-r[k-1].x)/seg; t.hy=(r[k].y-r[k-1].y)/seg; t.wp=k; return; }
+      acc+=seg; }
+    t.x=r[r.length-1].x; t.y=r[r.length-1].y; t.wp=r.length-1; }
+
+  _sectorOf(x,y){ const S=this.sectors; if(!S) return null;
+    const c=Math.max(0,Math.min(S.cols-1,Math.floor(x/S.w)));
+    const r=Math.max(0,Math.min(S.rows-1,Math.floor(y/S.h)));
+    return {c,r,label:String.fromCharCode(65+c)+(r+1)}; }
 
   _loadTiles(Z,gx0,gy0,gxMax,gyMax){
     const txMin=Math.floor(gx0/256), txMax=Math.floor((gxMax-1)/256);
@@ -519,79 +666,111 @@ class Component extends DCLogic {
     const blob=(cx,cy,r,col,a)=>{ const g=x.createRadialGradient(cx,cy,0,cx,cy,r);
       g.addColorStop(0,col.replace('A',a)); g.addColorStop(1,col.replace('A','0'));
       x.fillStyle=g; x.beginPath(); x.arc(cx,cy,r,0,7); x.fill(); };
-    this.corridors.forEach(c=>{ for(let k=0;k<c.pts.length;k+=2){ const p=c.pts[k];
-      blob(p.x,p.y,58,'rgba(225,120,20,A)',0.04); } });
+    (this.vertiports||[]).forEach(v=>{ blob(v.x,v.y,76,'rgba(225,120,20,A)',0.05); });
     this.residential.forEach((p,i)=>{ const hot=i%3===0;
       blob(p.x,p.y, hot?120:88, hot?'rgba(214,70,40,A)':'rgba(225,140,25,A)', hot?0.13:0.08); });
     this.buildHeatCanvas=cv; this.heatCanvas=cv;
   }
 
   initTaxis(){
+    if(!this.vertiports.length) return;   // pads not loaded yet
     const models=['Volocon V3','Aria S5','Joby J6','Lilium L7','Midnight M2','EHang E8'];
     const sampleFleet=[
-      {callsign:'EVX-101',model:'Volocon V3',ci:0, dir:1, u:.34,spd:21,battery:92},
-      {callsign:'EVX-102',model:'Aria S5',   ci:3, dir:-1,u:.58,spd:19,battery:76},
-      {callsign:'EVX-103',model:'Joby J6',   ci:8, dir:1, u:.42,spd:23,battery:61},
-      {callsign:'EVX-104',model:'Lilium L7', ci:11,dir:-1,u:.66,spd:20,battery:44},
-      {callsign:'EVX-105',model:'Midnight M2',ci:4,dir:1, u:.53,spd:18,battery:17,status:'emergency',emgTimer:14},
-      {callsign:'EVX-106',model:'EHang E8',  ci:6, dir:-1,u:.28,spd:22,battery:68},
-      {callsign:'EVX-107',model:'Volocon V3',ci:1, dir:1, u:.73,spd:17,battery:39},
-      {callsign:'EVX-108',model:'Aria S5',   ci:12,dir:-1,u:.47,spd:24,battery:83},
-      {callsign:'EVX-109',model:'Joby J6',   ci:9, dir:1, u:.31,spd:20,battery:55},
-      {callsign:'EVX-110',model:'Lilium L7', ci:2, dir:-1,u:.62,spd:21,battery:71},
-      {callsign:'EVX-111',model:'Midnight M2',ci:14,dir:1,u:.38,spd:19,battery:33},
-      {callsign:'EVX-112',model:'EHang E8',  ci:5, dir:-1,u:.69,spd:23,battery:88},
-      {callsign:'EVX-113',model:'Volocon V3',ci:10,dir:1, u:.51,spd:18,battery:47},
-      {callsign:'EVX-114',model:'Aria S5',   ci:7, dir:-1,u:.36,spd:22,battery:64},
-      {callsign:'EVX-115',model:'Joby J6',   ci:13,dir:1, u:.57,spd:20,battery:29},
-      {callsign:'EVX-116',model:'Lilium L7', ci:0, dir:1, u:1,  spd:21,battery:96,landed:4.5,arrivedVp:1},
+      {callsign:'EVX-101',model:'Volocon V3', spd:21,battery:92},
+      {callsign:'EVX-102',model:'Aria S5',    spd:19,battery:76},
+      {callsign:'EVX-103',model:'Joby J6',    spd:23,battery:61},
+      {callsign:'EVX-104',model:'Lilium L7',  spd:20,battery:44},
+      {callsign:'EVX-105',model:'Midnight M2',spd:18,battery:17,status:'emergency',emgTimer:14},
+      {callsign:'EVX-106',model:'EHang E8',   spd:22,battery:68},
+      {callsign:'EVX-107',model:'Volocon V3', spd:17,battery:39},
+      {callsign:'EVX-108',model:'Aria S5',    spd:24,battery:83},
+      {callsign:'EVX-109',model:'Joby J6',    spd:20,battery:55},
+      {callsign:'EVX-110',model:'Lilium L7',  spd:21,battery:71},
+      {callsign:'EVX-111',model:'Midnight M2',spd:19,battery:33},
+      {callsign:'EVX-112',model:'EHang E8',   spd:23,battery:88},
+      {callsign:'EVX-113',model:'Volocon V3', spd:18,battery:47},
+      {callsign:'EVX-114',model:'Aria S5',    spd:22,battery:64},
+      {callsign:'EVX-115',model:'Joby J6',    spd:20,battery:29},
+      {callsign:'EVX-116',model:'Lilium L7',  spd:21,battery:96,landed:4.5,arrivedVp:1},
     ];
+    const vpN=this.vertiports.length;
     const n=Math.max(4,Math.min(24, this.props.fleetSize??16)); this._fleetN=this.props.fleetSize??16; this.taxis=[];
     for(let i=0;i<n;i++){
       const sample=sampleFleet[i]||{
         callsign:'EVX-'+(101+i), model:models[i%models.length],
-        ci:(i*7+3)%this.corridors.length, dir:i%2?1:-1,
-        u:.16+((i*13)%68)/100, spd:17+(i*3)%8, battery:46+(i*11)%49
+        spd:17+(i*3)%8, battery:46+(i*11)%49
       };
-      const taxi={
-        id:i, callsign:sample.callsign, model:sample.model,
-        ci:sample.ci, dir:sample.dir, u:sample.u, spd:sample.spd,
+      const t={
+        id:i, callsign:sample.callsign, model:sample.model, spd:sample.spd,
         battery:sample.battery, status:sample.status||'normal',
-        landed:sample.landed||0, arrivedVp:sample.arrivedVp,
-        lateral:0, latTarget:0, conflict:false, yielding:false,
-        emgTimer:sample.emgTimer||0, x:0, y:0, hx:1, hy:0
+        landed:sample.landed||0, emgTimer:sample.emgTimer||0,
+        conflict:false, yielding:false, hx:1, hy:0, x:0, y:0,
+        route:null, wp:0, goalVp:undefined, originVp:undefined, arrivedVp:undefined
       };
-      this.taxis.push(taxi);
-      if(taxi.landed>0 && taxi.arrivedVp!=null){
-        const v=this.vertiports[taxi.arrivedVp]; taxi.x=v.x; taxi.y=v.y;
-      } else {
-        this._place(taxi);
+      if(t.landed>0){                                   // start parked on a pad
+        const vp=sample.arrivedVp!=null? sample.arrivedVp%vpN : i%vpN;
+        t.arrivedVp=vp; const v=this.vertiports[vp]; t.x=v.x; t.y=v.y;
+      } else {                                          // start airborne mid-route
+        const from=i%vpN; let g=(i*5+3)%vpN; if(g===from) g=(g+1)%vpN;
+        const ov=this.vertiports[from]; t.x=ov.x; t.y=ov.y; t.originVp=from; t.goalVp=g;
+        const gv=this.vertiports[g]; this._assignRoute(t, gv.x, gv.y);
+        this._seedProgress(t, 0.12 + (i%5)*0.14);
       }
+      this.taxis.push(t);
     }
   }
 
   seedEvents(){
     const seeds=[
-      ['14:22:00','⚠ EMERGENCY · EVX-105 low energy 17% · priority route to Harlaching','#d6463a',true],
-      ['14:21:44','on pad · EVX-116 landed Hauptbahnhof · stand 3 assigned','#18926a'],
-      ['14:21:31','route reserved · EVX-104 → Messe Riem via C-12','#2f6df0'],
-      ['14:21:18','slot leased · Olympiapark T-03:48','#6557d6'],
+      ['14:22:00','⚠ EMERGENCY · EVX-105 low energy 17% · priority route to Klinikum Harlaching','#d6463a',true],
+      ['14:21:44','on pad · EVX-116 landed Klinikum Großhadern · stand 2 assigned','#18926a'],
+      ['14:21:31','self-routed · EVX-104 → Messestadt Ost via sector D4','#2f6df0'],
+      ['14:21:18','slot leased · Allianz Arena T-03:48','#6557d6'],
       ['14:21:06','V2V handshake · EVX-107 ⇄ EVX-110','#2f6df0'],
-      ['14:20:52','noise spread · corridor C-03 rebalanced','#d98a16'],
+      ['14:20:52','noise spread · sector C3 rebalanced','#d98a16'],
       ['14:20:39','weather advisory · north-east cell drifting 13 m/s','#5a7fa8'],
     ];
     seeds.forEach(s=> this.events.push({t:s[0], text:s[1], color:s[2], important:s[3]}));
   }
 
-  pointAt(c,u){ u=Math.max(0,Math.min(1,u)); const f=u*(c.pts.length-1); const i=Math.floor(f); const t=f-i;
-    const p0=c.pts[i], p1=c.pts[Math.min(i+1,c.pts.length-1)];
-    return {x:p0.x+(p1.x-p0.x)*t, y:p0.y+(p1.y-p0.y)*t}; }
-  tangentAt(c,u){ const e=0.01; const a=this.pointAt(c,Math.max(0,u-e)), b=this.pointAt(c,Math.min(1,u+e));
-    let dx=b.x-a.x, dy=b.y-a.y; const m=Math.hypot(dx,dy)||1; return {x:dx/m,y:dy/m}; }
-  _place(t){ const c=this.corridors[t.ci]; const p=this.pointAt(c,t.u); const tg=this.tangentAt(c,t.u);
-    const hx=tg.x*t.dir, hy=tg.y*t.dir; const m=Math.hypot(hx,hy)||1;
-    const nx=-hy/m, ny=hx/m;
-    t.x=p.x+nx*t.lateral; t.y=p.y+ny*t.lateral; t.hx=hx/m; t.hy=hy/m; }
+  // Vector steering: each heli seeks its next self-computed waypoint, blends in
+  // separation from neighbours and repulsion from no-fly polygons, then turns at
+  // a limited rate toward that heading — so corners come out smooth and curvy.
+  _steer(t,dt){
+    const r=t.route;
+    if(!r || t.wp>=r.length){ this._arrive(t); return; }
+    let tgt=r[t.wp];
+    let dx=tgt.x-t.x, dy=tgt.y-t.y, dist=Math.hypot(dx,dy);
+    const isLast=(t.wp===r.length-1);
+    const arriveR=isLast?20:30;
+    if(dist<arriveR){
+      if(isLast){ this._arrive(t); return; }
+      t.wp++; tgt=r[t.wp]; dx=tgt.x-t.x; dy=tgt.y-t.y; dist=Math.hypot(dx,dy)||1;
+    }
+    let desx=dx/(dist||1), desy=dy/(dist||1);
+    // separation from other airborne taxis
+    let sx=0,sy=0;
+    for(const o of this.taxis){ if(o===t||o.landed>0) continue;
+      const ox=t.x-o.x, oy=t.y-o.y, od=Math.hypot(ox,oy);
+      if(od>0.001 && od<50){ const w=(50-od)/50; sx+=ox/od*w; sy+=oy/od*w; } }
+    // repulsion away from no-fly polygons (safety net; routing already avoids them)
+    let rx=0,ry=0;
+    const gv = (t.goalVp!=null)? this.vertiports[t.goalVp] : null;   // its cleared destination pad
+    for(const z of (this.zones||[])){ if(z.kind!=='nofly') continue;
+      if(gv && this._pointInPoly(gv.x,gv.y,z.pts)) continue;          // don't repel from the destination's own zone (cleared to land)
+      const inside=this._pointInPoly(t.x,t.y,z.pts);
+      const pd=inside?0:this._polyDist(t.x,t.y,z.pts), reach=42;
+      if(inside || pd<reach){ const ox=t.x-z.x, oy=t.y-z.y, om=Math.hypot(ox,oy)||1;
+        const w=inside?1.6:(reach-pd)/reach; rx+=ox/om*w; ry+=oy/om*w; } }
+    desx+=sx*0.8+rx*1.6; desy+=sy*0.8+ry*1.6;
+    const dm=Math.hypot(desx,desy)||1; desx/=dm; desy/=dm;
+    const cur=Math.atan2(t.hy,t.hx); const des=Math.atan2(desy,desx);
+    let da=des-cur; while(da>Math.PI)da-=2*Math.PI; while(da<-Math.PI)da+=2*Math.PI;
+    const maxTurn=1.8*dt; if(da>maxTurn)da=maxTurn; else if(da<-maxTurn)da=-maxTurn;
+    const na=cur+da; t.hx=Math.cos(na); t.hy=Math.sin(na);
+    const v=t.spd*(t.yielding?0.66:1);
+    t.x+=t.hx*v*dt; t.y+=t.hy*v*dt;
+  }
 
   componentDidUpdate(){ const fs=this.props.fleetSize??16;
     if(this._fleetN!==fs){ this._fleetN=fs; this.initTaxis(); this.selectedId=null; } }
@@ -603,29 +782,25 @@ class Component extends DCLogic {
     Ts.forEach(t=>{
       if(t.landed>0){ t.landed-=dt; t.battery=Math.min(100,t.battery+dt*5);
         if(t.landed<=0) this._depart(t); return; }
-      const c=this.corridors[t.ci];
-      const v=t.spd*(t.yielding?0.62:1);
-      t.u += (v/c.len)*dt*t.dir;
+      this._steer(t,dt);
       t.battery -= dt*(0.20 + (t.status==='emergency'?0.5:0));
       if(t.battery<0) t.battery=0;
-      t.lateral += (t.latTarget - t.lateral)*Math.min(1,dt*3.2);
-      if(t.u>=1 || t.u<=0){ this._arrive(t); } else this._place(t);
+      t.x=Math.max(0,Math.min(this.WORLD_W,t.x)); t.y=Math.max(0,Math.min(this.WORLD_H,t.y));
     });
-    Ts.forEach(t=>{ t.conflict=false; t.yielding=false; t.latTarget=0; });
+    Ts.forEach(t=>{ t.conflict=false; t.yielding=false; });
     const crit=46; const seen={}; this._pairLog=this._pairLog||{};
     for(let i=0;i<Ts.length;i++) for(let j=i+1;j<Ts.length;j++){
       const a=Ts[i], b=Ts[j]; if(a.landed>0||b.landed>0) continue;
-      if(a.ci===b.ci && a.dir===b.dir) continue;
       const d=Math.hypot(a.x-b.x,a.y-b.y);
       if(d<crit){
         a.conflict=true; b.conflict=true;
         const yielder = a.battery>b.battery? a : b;
-        yielder.yielding=true; yielder.latTarget=18;
+        yielder.yielding=true;
         const key=a.id<b.id? a.id+'-'+b.id : b.id+'-'+a.id; seen[key]=true;
         if(!this.activeConflicts[key]){ this.activeConflicts[key]=this.t;
           const last=this._pairLog[key]||-999;
           if(this.t-last>20){ this._pairLog[key]=this.t;
-            this._log('V2V deconfliction · '+a.callsign+' ⇄ '+b.callsign+' · '+yielder.callsign+' yields lateral', '#d98a16'); }
+            this._log('V2V deconfliction · '+a.callsign+' ⇄ '+b.callsign+' · '+yielder.callsign+' yields & re-vectors', '#d98a16'); }
         }
       }
     }
@@ -636,8 +811,8 @@ class Component extends DCLogic {
       const cand=this.taxis.filter(t=>t.status==='normal'&&t.landed<=0);
       if(cand.length){ const t=cand[Math.floor(Math.random()*cand.length)];
         t.status='emergency'; t.battery=Math.min(t.battery,11+Math.random()*8); t.emgTimer=11+Math.random()*6;
-        const vp=this._nearestVp(t);
-        this._log('⚠ EMERGENCY · '+t.callsign+' low energy '+Math.round(t.battery)+'% · diverting '+vp.name,'#d6463a',true);
+        const vp=this._nearestVp(t); t.goalVp=vp.id; t.arrivedVp=undefined; this._assignRoute(t, vp.x, vp.y);
+        this._log('⚠ EMERGENCY · '+t.callsign+' low energy '+Math.round(t.battery)+'% · self-routing to '+vp.name,'#d6463a',true);
       }
     }
     this.taxis.forEach(t=>{ if(t.status==='emergency'){ t.emgTimer-=dt;
@@ -645,20 +820,24 @@ class Component extends DCLogic {
         this._log('resolved · '+t.callsign+' secured slot, reserve restored','#18926a'); } } });
 
     const w=this.weather; w.x+=w.vx*dt; w.y+=w.vy*dt;
-    if(w.x>this.WORLD_W-100||w.x<100){ w.vx*=-1; this._log('weather cell drift · corridor advisories updated','#5a7fa8'); }
+    if(w.x>this.WORLD_W-100||w.x<100){ w.vx*=-1; this._log('weather cell drift · sector advisories updated','#5a7fa8'); }
     if(w.y>this.WORLD_H-100||w.y<100) w.vy*=-1;
   }
 
-  _arrive(t){ const c=this.corridors[t.ci]; const vp = t.u>=1? c.b : c.a;
-    t.landed=2.4+Math.random()*3.2; t.arrivedVp=vp; t.lateral=0; t.latTarget=0;
-    const v=this.vertiports[vp]; t.x=v.x; t.y=v.y;
-    if(Math.random()<0.5) this._log('on pad · '+t.callsign+' landed '+v.name+' · stand assigned','#18926a'); }
+  _arrive(t){ const vp = (t.goalVp!=null)? t.goalVp : this._nearestVp(t).id;
+    t.landed=2.4+Math.random()*3.2; t.arrivedVp=vp; t.route=null; t.wp=0;
+    const v=this.vertiports[vp]; if(v){ t.x=v.x; t.y=v.y; }
+    if(Math.random()<0.5 && v) this._log('on pad · '+t.callsign+' landed '+v.name+' · stand assigned','#18926a'); }
 
-  _depart(t){ const vp=t.arrivedVp; const opts=this.adj[vp].filter(ci=>ci!==t.ci);
-    const pool=opts.length?opts:this.adj[vp];
-    const ci = pool[Math.floor(Math.random()*pool.length)];
-    const c=this.corridors[ci]; t.ci=ci; t.dir = c.a===vp? 1 : -1; t.u = c.a===vp? 0.001 : 0.999;
-    this._place(t); }
+  // pick a fresh destination and let the aircraft compute its own course there
+  _depart(t){ const from = (t.arrivedVp!=null)? t.arrivedVp : this._nearestVp(t).id;
+    const v=this.vertiports[from]; if(v){ t.x=v.x; t.y=v.y; }
+    const N=this.vertiports.length; let g=from;
+    if(N>1){ let guard=0; do{ g=Math.floor(Math.random()*N); }while(g===from && ++guard<8); }
+    t.originVp=from; t.goalVp=g; t.arrivedVp=undefined; if(t.status==='emergency') t.status='normal';
+    const gv=this.vertiports[g]; this._assignRoute(t, gv.x, gv.y);
+    const nx=(t.route&&t.route.length>1)? t.route[1] : gv;
+    const hx=nx.x-t.x, hy=nx.y-t.y, m=Math.hypot(hx,hy)||1; t.hx=hx/m; t.hy=hy/m; }
 
   _nearestVp(t){ let best=this.vertiports[0], bd=1e9;
     this.vertiports.forEach(v=>{ const d=Math.hypot(v.x-t.x,v.y-t.y); if(d<bd){bd=d;best=v;} }); return best; }
@@ -790,10 +969,8 @@ class Component extends DCLogic {
     this._drawBaseMap(ctx);
     if(L.heatmap) this._drawHeat(ctx);
     if(L.zones) this._drawZones(ctx);
-    if(L.emergency) this._drawSurfaces(ctx);
     if(L.weather) this._drawWeather(ctx);
-    if(L.paths) this._drawCorridors(ctx);
-    if(L.flow) this._drawFlow(ctx);
+    if(L.paths) this._drawFlightPaths(ctx);
     if(L.energy) this._drawEnergy(ctx);
     if(L.vertiports) this._drawVertiports(ctx);
     if(L.collisions) this._drawConflicts(ctx);
@@ -831,31 +1008,29 @@ class Component extends DCLogic {
     try{ ctx.drawImage(this.heatCanvas, tl.x, tl.y, br.x-tl.x, br.y-tl.y); }catch(e){} ctx.restore(); }
 
   _drawZones(ctx){ const C=this.C;
-    this.zones.forEach(z=>{ const s=this.W2S(z.x,z.y); const r=z.r*this.view.scale;
+    this.zones.forEach(z=>{
+      const sp=z.pts.map(p=>this.W2S(p.x,p.y));
       const col = z.kind==='nofly'? C.red : C.amber;
+      const trace=()=>{ ctx.beginPath(); sp.forEach((p,i)=> i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.closePath(); };
+      let minx=1e9,miny=1e9,maxx=-1e9,maxy=-1e9;
+      sp.forEach(p=>{ if(p.x<minx)minx=p.x; if(p.y<miny)miny=p.y; if(p.x>maxx)maxx=p.x; if(p.y>maxy)maxy=p.y; });
+      const w=maxx-minx, h=maxy-miny;
       ctx.save();
-      ctx.beginPath(); ctx.arc(s.x,s.y,r,0,7); ctx.clip();
-      ctx.strokeStyle = z.kind==='nofly'?'rgba(214,70,58,0.14)':'rgba(217,138,22,0.13)'; ctx.lineWidth=1;
-      for(let o=-r*2;o<r*2;o+=7){ ctx.beginPath(); ctx.moveTo(s.x+o, s.y-r); ctx.lineTo(s.x+o+r*2, s.y+r); ctx.stroke(); }
+      // hatched fill, clipped to the polygon
+      trace(); ctx.clip();
+      ctx.fillStyle = z.kind==='nofly'?'rgba(214,70,58,0.07)':'rgba(217,138,22,0.06)'; ctx.fillRect(minx,miny,w,h);
+      ctx.strokeStyle = z.kind==='nofly'?'rgba(214,70,58,0.16)':'rgba(217,138,22,0.15)'; ctx.lineWidth=1;
+      for(let o=-h;o<w+h;o+=7){ ctx.beginPath(); ctx.moveTo(minx+o,miny); ctx.lineTo(minx+o-h,maxy); ctx.stroke(); }
       ctx.restore();
-      ctx.save(); ctx.beginPath(); ctx.arc(s.x,s.y,r,0,7);
-      ctx.strokeStyle=col; ctx.globalAlpha=0.6; ctx.lineWidth=1.2; ctx.setLineDash([5,5]); ctx.stroke();
-      ctx.setLineDash([]); ctx.globalAlpha=1; ctx.fillStyle=col; ctx.font='600 9px IBM Plex Mono'; ctx.textAlign='center';
-      ctx.shadowColor=this.isDark?'rgba(5,10,16,0.95)':'rgba(255,255,255,0.9)'; ctx.shadowBlur=3; ctx.fillText(z.label, s.x, s.y - r - 5); ctx.restore(); });
-  }
-
-  _drawSurfaces(ctx){
-    this.surfaces.forEach(su=>{ const s=this.W2S(su.x,su.y); const r=su.r*this.view.scale;
-      const prep = su.type==='prep';
-      ctx.save();
-      ctx.beginPath(); ctx.arc(s.x,s.y,r,0,7);
-      ctx.fillStyle = prep? 'rgba(217,138,22,0.16)' : 'rgba(214,70,58,0.17)'; ctx.fill();
-      ctx.strokeStyle = prep? 'rgba(217,138,22,0.75)' : 'rgba(214,70,58,0.75)'; ctx.lineWidth=1.2; ctx.stroke();
-      ctx.strokeStyle = prep? 'rgba(170,105,12,0.95)':'rgba(170,46,38,0.95)'; ctx.lineWidth=1.6;
-      const g=r*0.42;
-      if(prep){ ctx.beginPath(); ctx.moveTo(s.x-g,s.y-g);ctx.lineTo(s.x-g,s.y+g);ctx.moveTo(s.x+g,s.y-g);ctx.lineTo(s.x+g,s.y+g);ctx.moveTo(s.x-g,s.y);ctx.lineTo(s.x+g,s.y); ctx.stroke(); }
-      else { ctx.beginPath(); ctx.moveTo(s.x-g,s.y-g);ctx.lineTo(s.x+g,s.y+g);ctx.moveTo(s.x+g,s.y-g);ctx.lineTo(s.x-g,s.y+g); ctx.stroke(); }
-      ctx.restore(); });
+      // street-aligned dashed outline
+      ctx.save(); trace();
+      ctx.strokeStyle=col; ctx.globalAlpha=0.62; ctx.lineWidth=1.3; ctx.lineJoin='round'; ctx.setLineDash([5,5]); ctx.stroke();
+      ctx.setLineDash([]); ctx.globalAlpha=1;
+      // label above the polygon's top edge
+      ctx.fillStyle=col; ctx.font='600 9px IBM Plex Mono'; ctx.textAlign='center';
+      ctx.shadowColor=this.isDark?'rgba(5,10,16,0.95)':'rgba(255,255,255,0.9)'; ctx.shadowBlur=3;
+      ctx.fillText(z.label, (minx+maxx)/2, miny - 5); ctx.restore();
+    });
   }
 
   _drawWeather(ctx){ const w=this.weather; const s=this.W2S(w.x,w.y); const r=w.r*this.view.scale;
@@ -872,29 +1047,88 @@ class Component extends DCLogic {
     ctx.restore();
   }
 
-  _drawCorridors(ctx){
-    this.corridors.forEach(c=>{
-      ctx.save(); this._path(ctx,c.pts,false);
-      ctx.strokeStyle='rgba(101,87,214,0.12)'; ctx.lineWidth=Math.max(7,16*this.view.scale); ctx.lineCap='round'; ctx.lineJoin='round'; ctx.stroke();
-      this._path(ctx,c.pts,false);
-      ctx.strokeStyle='rgba(101,87,214,0.55)'; ctx.lineWidth=1.2; ctx.setLineDash([2,5]); ctx.stroke(); ctx.setLineDash([]);
-      ctx.restore();
+  // ---------- FLIGHT PATHS ----------
+  // Default: each airborne heli shows only a fine ~2km look-ahead line.
+  // On selection: the flight-sector grid appears, the selected heli's whole
+  // self-computed route is highlighted, and the rest dim to faint look-aheads.
+  _drawFlightPaths(ctx){
+    const sel=this.selectedId;
+    const AHEAD = 2000/this.mPerPx;          // ~2 km expressed in world px
+    if(sel!=null) this._drawSectors(ctx);    // sectors only surface when a heli is picked
+    this.taxis.forEach(t=>{
+      if(t.landed>0) return;
+      const rgb=this._taxiRGB(t);
+      if(t.id===sel){
+        // whole self-computed route to destination, drawn prominently
+        const path=this._pathAhead(t, Infinity);
+        this._strokeTrail(ctx, path.pts, rgb, {width:2.3, head:0.95, tail:0.34, glow:true, glowAlpha:0.16,
+          dash:[3,13], dashOffset:-this.t*26});
+      } else if(sel!=null){
+        // someone else is selected -> keep a faint look-ahead for context
+        const path=this._pathAhead(t, AHEAD);
+        this._strokeTrail(ctx, path.pts, rgb, {width:1.3, head:0.32, tail:0});
+      } else {
+        // nothing selected -> the fine 2km look-ahead line
+        const path=this._pathAhead(t, AHEAD);
+        this._strokeTrail(ctx, path.pts, rgb, {width:1.7, head:0.9, tail:0, glow:true, glowAlpha:0.09});
+      }
     });
   }
 
-  _drawFlow(ctx){
-    this.corridors.forEach(c=>{
-      let net=0,cnt=0; this.taxis.forEach(t=>{ if(t.ci===c.id&&t.landed<=0){ net+=t.dir; cnt++; } });
-      if(cnt===0) net=1; const dir=net>=0?1:-1;
-      const reps=5;
-      for(let i=0;i<reps;i++){ let u=((this.t*0.09)+i/reps)%1; if(dir<0) u=1-u;
-        const p=this.pointAt(c,u); const tg=this.tangentAt(c,u); const s=this.W2S(p.x,p.y);
-        const ang=Math.atan2(tg.y*dir,tg.x*dir);
-        ctx.save(); ctx.translate(s.x,s.y); ctx.rotate(ang);
-        ctx.fillStyle='rgba(47,109,240,0.6)'; ctx.beginPath();
-        ctx.moveTo(5,0); ctx.lineTo(-3,3.2); ctx.lineTo(-3,-3.2); ctx.closePath(); ctx.fill(); ctx.restore();
-      }
-    });
+  _taxiRGB(t){ return t.status==='emergency'? [214,70,58] : t.conflict? [217,138,22] : [47,109,240]; }
+
+  // Trace world points from the heli forward along its self-computed route, up to
+  // maxPx of length (Infinity = all the way to the destination vertiport).
+  _pathAhead(t, maxPx){
+    const r=t.route; const out=[{x:t.x, y:t.y}];   // start at the heli itself
+    if(!r || t.wp>=r.length) return {pts:out, full:true};
+    let prev=out[0], acc=0;
+    for(let k=t.wp;k<r.length;k++){ const p=r[k];
+      const d=Math.hypot(p.x-prev.x, p.y-prev.y); if(d<0.001) continue;
+      if(acc+d>=maxPx){ const rr=(maxPx-acc)/d; out.push({x:prev.x+(p.x-prev.x)*rr, y:prev.y+(p.y-prev.y)*rr}); return {pts:out, full:false}; }
+      acc+=d; out.push(p); prev=p; }
+    return {pts:out, full:true};
+  }
+
+  // Stroke a polyline as a SMOOTH curve (quadratic through segment midpoints, so
+  // corners come out curvy) with a head->tail alpha gradient, optional glow and dashes.
+  _strokeTrail(ctx, worldPts, rgb, o){
+    if(!worldPts || worldPts.length<2) return;
+    const sp=worldPts.map(p=>this.W2S(p.x,p.y));
+    const a=sp[0], b=sp[sp.length-1], [r,g,bl]=rgb;
+    const trace=()=>{ ctx.beginPath(); ctx.moveTo(sp[0].x,sp[0].y);
+      if(sp.length===2){ ctx.lineTo(sp[1].x,sp[1].y); return; }
+      for(let i=1;i<sp.length-1;i++){ const mx=(sp[i].x+sp[i+1].x)/2, my=(sp[i].y+sp[i+1].y)/2;
+        ctx.quadraticCurveTo(sp[i].x,sp[i].y,mx,my); }
+      ctx.lineTo(sp[sp.length-1].x,sp[sp.length-1].y); };
+    ctx.save(); ctx.lineCap='round'; ctx.lineJoin='round';
+    if(o.glow){ trace(); ctx.strokeStyle=`rgba(${r},${g},${bl},${o.glowAlpha??0.12})`; ctx.lineWidth=(o.width||1.6)*4.5; ctx.stroke(); }
+    const grad=ctx.createLinearGradient(a.x,a.y,b.x,b.y);
+    grad.addColorStop(0, `rgba(${r},${g},${bl},${o.head??0.9})`);
+    grad.addColorStop(1, `rgba(${r},${g},${bl},${o.tail??0})`);
+    trace(); ctx.strokeStyle=grad; ctx.lineWidth=o.width||1.6; ctx.stroke();
+    if(o.dash){ trace(); ctx.setLineDash(o.dash); ctx.lineDashOffset=o.dashOffset||0;
+      ctx.strokeStyle=`rgba(${r},${g},${bl},0.9)`; ctx.lineWidth=(o.width||1.6)*0.6; ctx.stroke(); ctx.setLineDash([]); }
+    ctx.restore();
+  }
+
+  // Flight-sector grid — shown only while a heli is selected. The heli's current
+  // sector is highlighted; this is the airspace structure it self-navigates through.
+  _drawSectors(ctx){
+    const S=this.sectors; if(!S) return;
+    const sel=this.selectedId!=null? this.taxis.find(t=>t.id===this.selectedId) : null;
+    const cur=sel? this._sectorOf(sel.x,sel.y) : null;
+    ctx.save(); ctx.font='600 9px IBM Plex Mono'; ctx.textAlign='left';
+    for(let r=0;r<S.rows;r++) for(let c=0;c<S.cols;c++){
+      const p0=this.W2S(c*S.w, r*S.h), p1=this.W2S((c+1)*S.w, (r+1)*S.h);
+      const active = cur && cur.c===c && cur.r===r;
+      if(active){ ctx.fillStyle='rgba(101,87,214,0.10)'; ctx.fillRect(p0.x,p0.y,p1.x-p0.x,p1.y-p0.y); }
+      ctx.strokeStyle = active? 'rgba(101,87,214,0.55)' : 'rgba(101,87,214,0.16)';
+      ctx.lineWidth=1; ctx.strokeRect(p0.x,p0.y,p1.x-p0.x,p1.y-p0.y);
+      ctx.fillStyle='rgba(101,87,214,'+(active?0.9:0.4)+')';
+      ctx.fillText(String.fromCharCode(65+c)+(r+1), p0.x+4, p0.y+12);
+    }
+    ctx.restore();
   }
 
   _drawEnergy(ctx){
@@ -914,9 +1148,6 @@ class Component extends DCLogic {
       const free=Math.max(0,v.stands-occ);
       const fin=this.taxis.some(t=>t.landed<=0&&this._etaTo(t)<24&&this._destVp(t)===v.id);
       ctx.save();
-      for(let i=0;i<v.stands;i++){ const ang=(i/v.stands)*Math.PI*2 - Math.PI/2; const rr=18+9;
-        const px=s.x+Math.cos(ang)*rr, py=s.y+Math.sin(ang)*rr;
-        ctx.beginPath(); ctx.arc(px,py,2.6,0,7); ctx.fillStyle= i<occ? C.amber : 'rgba(47,109,240,0.6)'; ctx.fill(); }
       const pr=11;
       if(fin){ ctx.beginPath(); ctx.arc(s.x,s.y,pr+7+2*Math.sin(this.t*4),0,7); ctx.strokeStyle='rgba(217,138,22,0.65)'; ctx.lineWidth=1.4; ctx.stroke(); }
       ctx.beginPath(); ctx.rect(s.x-pr,s.y-pr,pr*2,pr*2);
@@ -974,8 +1205,11 @@ class Component extends DCLogic {
     });
   }
 
-  _etaTo(t){ const c=this.corridors[t.ci]; const rem=(t.dir>0?(1-t.u):t.u)*c.len; return rem/t.spd; }
-  _destVp(t){ const c=this.corridors[t.ci]; return t.dir>0? c.b : c.a; }
+  _etaTo(t){ const r=t.route; if(!r||t.wp>=r.length) return 0;
+    let rem=Math.hypot(r[t.wp].x-t.x, r[t.wp].y-t.y);
+    for(let k=t.wp+1;k<r.length;k++) rem+=Math.hypot(r[k].x-r[k-1].x, r[k].y-r[k-1].y);
+    return rem/(t.spd||1); }
+  _destVp(t){ return (t.goalVp!=null)? t.goalVp : (t.arrivedVp!=null? t.arrivedVp : 0); }
   _km(px){ return px*this.mPerPx/1000; }
 
   toggleLayer(k){ const L={...this.state.layers}; L[k]=!L[k]; this.setState({layers:L}); }
@@ -984,11 +1218,9 @@ class Component extends DCLogic {
     const L=this.state.layers;
     const layerMeta={
       heatmap:{label:'Noise heatmap', color:'#d98a16'},
-      paths:{label:'Flight paths & corridors', color:'#6557d6'},
-      flow:{label:'Traffic flow vectors', color:'#2f6df0'},
+      paths:{label:'Flight paths & sectors', color:'#6557d6'},
       collisions:{label:'Collision / V2V conflicts', color:'#d6463a'},
       energy:{label:'Energy reachability', color:'#18926a'},
-      emergency:{label:'Emergency surfaces', color:'#d6463a'},
       vertiports:{label:'Vertiports & stands', color:'#2f6df0'},
       zones:{label:'Zone types / no-fly', color:'#d98a16'},
       weather:{label:'Weather cells', color:'#5a7fa8'},
@@ -1001,8 +1233,8 @@ class Component extends DCLogic {
       track: on?m.color:'#dde2e8', knobLeft: on?'13px':'1.5px'
     }; };
     const groups=[
-      {name:'TRAFFIC', items:['heatmap','paths','flow'].map(mkItem)},
-      {name:'SAFETY', items:['collisions','energy','emergency'].map(mkItem)},
+      {name:'TRAFFIC', items:['heatmap','paths'].map(mkItem)},
+      {name:'SAFETY', items:['collisions','energy'].map(mkItem)},
       {name:'INFRASTRUCTURE', items:['vertiports','zones'].map(mkItem)},
       {name:'ENVIRONMENT', items:['weather'].map(mkItem)},
     ];
@@ -1049,7 +1281,7 @@ class Component extends DCLogic {
         statusBg: em?'#fdf1f0':'#eef4ff', headBg: em?'#fdf4f3':'#f5f8fe',
         batteryPct:Math.round(sTaxi.battery), batteryColor:bcol,
         speed:Math.round(sTaxi.spd*7.0), altitude: 180+ (sTaxi.id%5)*45,
-        corridorLabel:this.corridors[sTaxi.ci].label, destName:dv.name,
+        sectorLabel:(this._sectorOf(sTaxi.x,sTaxi.y)||{}).label||'—', destName:dv.name,
         etaStr: em?'PRIORITY': (Math.floor(etaS/60)+':'+String(etaS%60).padStart(2,'0')),
         slotStage:stage, stageColor, reachCount,
         constraintPct:ci, constraintColor:ccol,
