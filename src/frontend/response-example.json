@@ -1,0 +1,11 @@
+[
+    {
+        "agent-id": "id",
+        "position": ["xpos", "ypos"],
+        "velocity": "vel",
+        "batterie-pecentage": "percentage",
+        "path": [["vector1-x", "vector1-y"], ["vector3-x", "vector3-y"]],
+        "status": "status",
+        "Eta": "dd-mm-yyyy:hh-mm-ss"
+    }
+]
