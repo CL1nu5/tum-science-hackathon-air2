@@ -107,6 +107,14 @@ class TowerStateService:
 
     def reachable_locked(self, aircraft: dict) -> list[dict]:
         speed = aircraft["speed_ms"] or self.settings.cruise_speed_ms
+        # A declared emergency is allowed to dip into its safety reserve to reach
+        # the nearest surface — otherwise a low-battery taxi has *zero* reachable
+        # options and escalates straight to a human instead of landing somewhere.
+        reserve = (
+            self.settings.emergency_reserve_pct
+            if aircraft.get("status") == "EMERGENCY"
+            else self.settings.safety_reserve_pct
+        )
         reachable = []
         for port in self.store.state["vertiports"].values():
             if not port["active"]:
@@ -119,10 +127,7 @@ class TowerStateService:
                 distance / max(speed, 1.0)
                 * self.settings.nominal_battery_drain_per_s
             )
-            if (
-                aircraft["battery_pct"] - energy
-                >= self.settings.safety_reserve_pct
-            ):
+            if aircraft["battery_pct"] - energy >= reserve:
                 reachable.append(port)
         return reachable
 

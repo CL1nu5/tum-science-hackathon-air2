@@ -98,7 +98,7 @@ class EmergencyCoordinator:
         for target in ([current_target] if current_target else []) + own:
             try:
                 plan = self.routes.reserve_flight_plan_locked(
-                    self._request(aircraft, target)
+                    self._request(aircraft, target), enforce_capacity=False
                 )
                 return self._resolved_locked(aircraft, target, plan)
             except RoutePlanningError:
@@ -120,7 +120,7 @@ class EmergencyCoordinator:
             victim["revision"] += 1
             try:
                 plan = self.routes.reserve_flight_plan_locked(
-                    self._request(aircraft, target)
+                    self._request(aircraft, target), enforce_capacity=False
                 )
             except RoutePlanningError:
                 self.store.state = before_preemption
@@ -156,7 +156,7 @@ class EmergencyCoordinator:
         for target in remaining:
             try:
                 plan = self.routes.reserve_flight_plan_locked(
-                    self._request(aircraft, target)
+                    self._request(aircraft, target), enforce_capacity=False
                 )
                 return self._resolved_locked(aircraft, target, plan)
             except RoutePlanningError:

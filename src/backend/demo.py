@@ -37,7 +37,10 @@ def main() -> None:
     settings = get_settings()
     host, port = settings.host, settings.port
     connect_host = "127.0.0.1" if host in ("0.0.0.0", "") else host
-    fleet_size = int(sys.argv[1]) if len(sys.argv) > 1 else 50
+    # 30 keeps the single-process tower planner responsive and the airspace
+    # lively (most taxis flying). Larger fleets work but the serial planner starts
+    # to back up under its global lock, leaving taxis waiting to depart.
+    fleet_size = int(sys.argv[1]) if len(sys.argv) > 1 else 30
 
     server = uvicorn.Server(
         uvicorn.Config(app, host=host, port=port, log_level=settings.log_level)

@@ -13,11 +13,14 @@ from .config import (
     BATTERY_DRAIN_PER_S,
     BATTERY_RECHARGE_PER_S,
     BROADCAST_INTERVAL_S,
+    CRITICAL_RADIUS_M,
     CRUISE_SPEED_MS,
     DISPATCH_RETRY_S,
     EMERGENCY_FAULT_MTBF_S,
     EMERGENCY_REDECLARE_S,
     EMERGENCY_THRESHOLD_PCT,
+    HOLD_MAX_S,
+    HOLD_RETRY_S,
     HUMAN_TIMEOUT_S,
     MAX_REROUTE_PER_FLIGHT,
     PARKED_DWELL_S,
@@ -26,6 +29,7 @@ from .config import (
     SIM_TICK_S,
     TOWER_WS_URL,
     V2V_PORT,
+    V2V_VERTICAL_SEP_M,
     V2V_WS_PORT,
 )
 from .messages import (
@@ -53,7 +57,13 @@ from .priority import (
     VertiportInfo,
     compute_priority_metric,
 )
-from .routing import RouteFollower, V2VDeconfliction, build_route_request_payload, waypoints_from_assignment
+from .routing import (
+    RouteFollower,
+    V2VDeconfliction,
+    build_route_request_payload,
+    interpolate_route_4d,
+    waypoints_from_assignment,
+)
 from .state import AgentState, AgentStatus, FlightStage, SlotStage, Waypoint
 
 log = logging.getLogger(__name__)
@@ -110,6 +120,12 @@ class EvtolAgent:
         self._human_escalation_timer: float | None = None
         self._route_granted: bool = False
         self._slot_granted: bool = False
+        # Landing coordination: a taxi only descends onto the pad once the tower
+        # has granted it a free stand (LandingClearance). Until then it holds
+        # (loiters on its corridor) instead of stacking onto an occupied pad.
+        self._landing_cleared: bool = False
+        self._hold_started_at: float | None = None
+        self._last_landing_request_at: float = 0.0
 
         self._register_tower_handlers()
         self._register_v2v_handlers()
@@ -164,6 +180,11 @@ class EvtolAgent:
         self.state.slot_time = msg.eta
         self.state.destination_vertiport = msg.destination_vertiport
         self._route_granted = True
+        # Fresh corridor → fresh approach: clear any prior landing clearance/hold
+        # and recentre on the new corridor (drop any stale V2V yield offset).
+        self._landing_cleared = False
+        self._hold_started_at = None
+        self.state.lateral_offset = 0.0
         self._maybe_mark_ready_for_takeoff()
 
     async def _on_lock_grant(self, msg: LockGrant) -> None:
@@ -185,6 +206,10 @@ class EvtolAgent:
     async def _on_landing_clearance(self, msg: LandingClearance) -> None:
         self.state.stand_id = msg.stand_id
         self.state.slot_stage = SlotStage.FINAL_APPROACH
+        # A stand (or emergency standby) is secured — the taxi may now descend and
+        # land. This releases any active hold so the route follower flies it in.
+        self._landing_cleared = msg.stand_id is not None or msg.emergency_standby
+        self._hold_started_at = None
         log.info(
             "[%s] Landing clearance granted at %s (stand=%s standby=%s)",
             self.state.agent_id,
@@ -302,9 +327,14 @@ class EvtolAgent:
             i_will_yield=False,
         )
 
-        # Run deconfliction from our side
+        # Run deconfliction from our side. Peers separated vertically (the tower
+        # hands out conflict-free corridors at distinct altitudes) are not a
+        # near-miss, so we hold course and don't thrash a lateral offset.
         peer_metric = msg.priority_metric
-        offset = V2VDeconfliction.negotiate(s, peer_metric, msg.from_agent)
+        vertically_clear = abs(s.altitude - msg.altitude) > V2V_VERTICAL_SEP_M
+        offset = 0.0 if vertically_clear else V2VDeconfliction.negotiate(
+            s, peer_metric, msg.from_agent
+        )
         if offset != 0.0:
             self.state.lateral_offset = offset
             ack.i_will_yield = True
@@ -328,6 +358,9 @@ class EvtolAgent:
                 "[%s] V2V: peer %s will yield — holding course",
                 self.state.agent_id, msg.from_agent,
             )
+        elif abs(self.state.altitude - msg.altitude) > V2V_VERTICAL_SEP_M:
+            # Vertically separated — no near-miss; stay on the corridor centreline.
+            self.state.lateral_offset = 0.0
         else:
             # We need to yield
             offset = V2VDeconfliction.negotiate(self.state, msg.priority_metric, msg.from_agent)
@@ -408,8 +441,24 @@ class EvtolAgent:
                 s.flight_stage = FlightStage.EN_ROUTE
                 s.speed = CRUISE_SPEED_MS
 
-            # --- ON_PAD → request stand assignment ---
+            # --- Approach / landing coordination (hold until a stand is granted) ---
+            if s.flight_stage in (FlightStage.DESCENDING, FlightStage.FINAL_APPROACH):
+                await self._coordinate_landing(now)
+
+            # --- V2V: return to corridor centre once no peer is close ---
+            if s.lateral_offset != 0.0 and not self.v2v.find_nearby(
+                s.position, CRITICAL_RADIUS_M
+            ):
+                s.lateral_offset = 0.0
+
+            # --- ON_PAD → park (only with a granted stand) ---
             if s.flight_stage == FlightStage.ON_PAD and s.slot_stage != SlotStage.ON_PAD:
+                if not self._landing_cleared:
+                    # Reached the pad without a stand (race) — bounce back to a
+                    # hold so the pad stays clear instead of an uncleared landing.
+                    s.flight_stage = FlightStage.FINAL_APPROACH
+                    await self._coordinate_landing(now)
+                    continue
                 s.slot_stage = SlotStage.ON_PAD
                 log.info("[%s] On pad at %s", s.agent_id, s.slot_vertiport)
                 # Release slot back to tower once stand assigned (tower will confirm)
@@ -431,9 +480,89 @@ class EvtolAgent:
                 s.reroute_count = 0
                 self._emergency_handled = False
                 self._human_escalation_timer = None
+                self._landing_cleared = False
+                self._hold_started_at = None
                 # Recharge, dwell briefly, then the dispatch loop sends it out again.
                 self._next_dispatch_at = time.monotonic() + PARKED_DWELL_S
                 log.info("[%s] Parked at %s", s.agent_id, s.slot_vertiport)
+
+    # -----------------------------------------------------------------------
+    # Approach / holding (concept §3 pad-standby + resolution order: adjust speed)
+    # -----------------------------------------------------------------------
+
+    async def _coordinate_landing(self, now: float) -> None:
+        """Secure a stand before descending; loiter (hold) until one is granted.
+
+        A taxi only commits to the final descent once the tower confirms a free
+        stand. Until then it holds on its corridor — different speeds (cruise →
+        hold) let an inbound taxi delay its approach instead of stacking onto an
+        occupied pad. Held too long → divert to a backup vertiport.
+        """
+        s = self.state
+        if self._landing_cleared:
+            return
+
+        # Rate-limited request for a stand at the destination.
+        if (
+            s.slot_vertiport
+            and now - self._last_landing_request_at > HOLD_RETRY_S
+        ):
+            self._last_landing_request_at = now
+            await self.tower.send(LockRequest(
+                agent_id=s.agent_id,
+                vertiport_id=s.slot_vertiport,
+                requested_time=s.slot_time or "",
+                priority_metric=s.priority_metric,
+                status=s.status.value,
+            ))
+
+        # No clearance yet → hold: slide the unflown schedule forward so the taxi
+        # loiters at altitude on its corridor (the pad stays clear).
+        if self._hold_started_at is None:
+            self._hold_started_at = now
+            log.info("[%s] Holding for a stand at %s", s.agent_id, s.slot_vertiport)
+        self._hold(SIM_TICK_S)
+        s.speed = 0.0  # hover-hold
+
+        if now - self._hold_started_at > HOLD_MAX_S:
+            await self._divert()
+
+    def _hold(self, dt: float) -> None:
+        """Loiter by sliding the current and following corridor waypoints forward
+        in time by ``dt``. The interpolated position is held exactly in place for
+        both the simulation and the dashboard (which read the same 4D corridor)."""
+        route = self.state.assigned_route
+        if len(route) < 2:
+            return
+        _, seg = interpolate_route_4d(route, time.time())
+        shifted = list(route)
+        for i in range(seg, len(shifted)):
+            w = shifted[i]
+            shifted[i] = Waypoint(w.x, w.y, w.z, w.t + dt)
+        self.state.assigned_route = shifted
+
+    async def _divert(self) -> None:
+        """Give up on the held destination and reroute to a backup vertiport."""
+        s = self.state
+        self._hold_started_at = None
+        if s.reroute_count >= MAX_REROUTE_PER_FLIGHT:
+            # Out of reroutes — keep holding; the tower/emergency path must resolve.
+            self._hold_started_at = time.monotonic()
+            return
+        backup = self._pick_destination()
+        if not backup or backup == s.slot_vertiport:
+            self._hold_started_at = time.monotonic()
+            return
+        log.warning("[%s] Held too long — diverting to %s", s.agent_id, backup)
+        if s.slot_vertiport and s.slot_time:
+            await self.tower.send(LockRelease(
+                agent_id=s.agent_id,
+                vertiport_id=s.slot_vertiport,
+                slot_time=s.slot_time,
+            ))
+        s.reroute_count += 1
+        self._landing_cleared = False
+        await self._request_route(backup)
 
     # -----------------------------------------------------------------------
     # Battery loop
@@ -489,9 +618,14 @@ class EvtolAgent:
             if s.battery_pct < EMERGENCY_THRESHOLD_PCT:
                 if not self._emergency_handled:
                     await self._declare_emergency("LOW_BATTERY")
-                elif now - self._emergency_declared_at > EMERGENCY_REDECLARE_S:
-                    # The previous declaration never produced a usable landing;
-                    # try again (a slot or surface may have freed up since).
+                elif (
+                    now - self._emergency_declared_at > EMERGENCY_REDECLARE_S
+                    and not self._route_granted
+                ):
+                    # Only re-declare if the cascade never produced a landing route
+                    # (e.g. it returned HUMAN_REQUIRED). If we already hold an
+                    # emergency corridor we fly it — re-declaring would keep
+                    # resetting the route and the taxi would never arrive.
                     await self._declare_emergency("LOW_BATTERY_RETRY")
 
     # -----------------------------------------------------------------------
@@ -543,16 +677,8 @@ class EvtolAgent:
             elif s.slot_stage == SlotStage.FIRM_FAR and minutes_left < FIRM_NEAR_MINUTES:
                 s.slot_stage = SlotStage.FIRM_NEAR
                 log.debug("[%s] Slot → FIRM_NEAR", s.agent_id)
-            elif s.slot_stage == SlotStage.FIRM_NEAR and s.flight_stage == FlightStage.FINAL_APPROACH:
-                log.debug("[%s] Requesting final approach clearance", s.agent_id)
-                if s.slot_vertiport:
-                    await self.tower.send(LockRequest(
-                        agent_id=s.agent_id,
-                        vertiport_id=s.slot_vertiport,
-                        requested_time=s.slot_time or "",
-                        priority_metric=s.priority_metric,
-                        status=s.status.value,
-                    ))
+            # The actual stand request + hold is driven by _coordinate_landing once
+            # the taxi reaches its approach, so the pad is only committed near touchdown.
 
     # -----------------------------------------------------------------------
     # Dispatch (continuous operation)

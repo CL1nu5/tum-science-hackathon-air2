@@ -94,7 +94,7 @@
     <div style="display:flex;align-items:center;gap:11px">
       <div style="width:24px;height:24px;border:1.5px solid #2f6df0;transform:rotate(45deg);display:flex;align-items:center;justify-content:center"><div style="width:7px;height:7px;background:#2f6df0"></div></div>
       <div style="display:flex;flex-direction:column;line-height:1.1">
-        <span style="font-size:14px;font-weight:700;letter-spacing:2px;color:#16263b">ELECTRX</span>
+        <span style="font-size:14px;font-weight:700;letter-spacing:2px;color:#16263b">PLACEBO</span>
         <span style="font-size:8.5px;font-weight:500;letter-spacing:2.5px;color:#9aa6b3;font-family:'IBM Plex Mono',monospace">TOWER&nbsp;CONTROL</span>
       </div>
     </div>
@@ -329,23 +329,23 @@
 </x-dc>
 <!-- Inline fallback copy of landing-pads.csv so the app works when opened via file:// (where fetch() is blocked). Keep byte-identical to landing-pads.csv. -->
 <script type="text/plain" id="landing-pads-csv">name,short,lat,lon,stands
-Klinikum rechts der Isar,RDI,48.1370,11.5996,2
-Klinikum Großhadern,GRH,48.1108,11.4700,2
-München Klinik Schwabing,SWB,48.1786,11.5707,2
-München Klinik Bogenhausen,BOG,48.1530,11.6360,2
-München Klinik Harlaching,HAR,48.0915,11.5565,2
-TUM City,TUM,48.1496,11.5680,4
-TUM Garching,GAR,48.2648,11.6715,5
-BMW Englischer Garten,BEG,48.1642,11.6020,3
-Messestadt Ost,MSO,48.1340,11.6960,4
-LMU,LMU,48.1505,11.5805,4
-BMW Tower,BMT,48.1767,11.5586,4
-Airport Munich,MUC,48.3538,11.7861,6
-Allianz Arena,ARE,48.2188,11.6247,5
-Pasing,PAS,48.1502,11.4612,4
-Ostbahnhof,OST,48.1270,11.6048,4
-Siemens Werke,SIE,48.0853,11.6363,4
-Grünwald,GRW,48.0707,11.5267,3
+Klinikum rechts der Isar,RDI,48.1370,11.5996,4
+Klinikum Großhadern,GRH,48.1108,11.4700,4
+München Klinik Schwabing,SWB,48.1786,11.5707,4
+München Klinik Bogenhausen,BOG,48.1530,11.6360,4
+München Klinik Harlaching,HAR,48.0915,11.5565,4
+TUM City,TUM,48.1496,11.5680,6
+TUM Garching,GAR,48.2648,11.6715,7
+BMW Englischer Garten,BEG,48.1642,11.6020,5
+Messestadt Ost,MSO,48.1340,11.6960,6
+LMU,LMU,48.1505,11.5805,6
+BMW Tower,BMT,48.1767,11.5586,6
+Airport Munich,MUC,48.3538,11.7861,8
+Allianz Arena,ARE,48.2188,11.6247,7
+Pasing,PAS,48.1502,11.4612,6
+Ostbahnhof,OST,48.1270,11.6048,6
+Siemens Werke,SIE,48.0853,11.6363,6
+Grünwald,GRW,48.0707,11.5267,5
 </script>
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;},&quot;simSpeed&quot;:{&quot;editor&quot;:&quot;float&quot;,&quot;default&quot;:1,&quot;min&quot;:0.25,&quot;max&quot;:3,&quot;step&quot;:0.25,&quot;tsType&quot;:&quot;number&quot;},&quot;fleetSize&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:16,&quot;min&quot;:4,&quot;max&quot;:24,&quot;step&quot;:1,&quot;tsType&quot;:&quot;number&quot;},&quot;trackLabels&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
 class Component extends DCLogic {
@@ -439,43 +439,32 @@ class Component extends DCLogic {
 
     // vertiports + corridor network are built from landing-pads.csv in _buildPads(), called from _init()
 
-    // zones  [kind, label, polygon[[lat,lon],...]] — real, hand-traced OpenStreetMap
-    // footprints (irregular polygons, NOT bounding boxes), so each outline lands exactly
-    // on the matching basemap feature in the shared Web-Mercator projection. A small,
-    // deliberate set — every zone earns its place, none wraps a vertiport:
-    //   'nofly'    — hard blocks; self-routing flies around them. (A zone that encloses a
-    //                vertiport, e.g. the airport, auto-becomes controlled-access: its own
-    //                pad stays reachable while transit traffic is kept out.)
-    //   'restrict' — advisory noise / low-altitude caps; drawn but do not block routing.
+    // zones  [kind, label, polygon[[lat,lon],...]] — fallback copy of the tower's
+    // airspace zones. Live mode replaces this from /api/snapshot so display and
+    // route decisions share one source of truth.
     const zn=[
-      // --- the canonical hard no-fly: the airport (controlled-access, its own pad reachable) ---
-      ['nofly','NO-FLY · MUC AIRPORT',[          // EDDM airfield perimeter, clamped to the map's north edge
-        [48.3480,11.7475],[48.3530,11.7455],[48.3640,11.7600],[48.3688,11.7830],
-        [48.3660,11.8060],[48.3495,11.8075],[48.3398,11.7945],[48.3392,11.7695],[48.3428,11.7535] ]],
-      // --- Olympiapark: major open-air event venue (stadium, concerts), Oberwiesenfeld ---
+      ['nofly','NO-FLY · MUC NORTH RUNWAY',[
+        [48.3610,11.7465],[48.3652,11.7475],[48.3658,11.8220],[48.3616,11.8230] ]],
+      ['nofly','NO-FLY · MUC SOUTH RUNWAY',[
+        [48.3430,11.7478],[48.3472,11.7468],[48.3480,11.8215],[48.3438,11.8225] ]],
       ['nofly','NO-FLY · OLYMPIAPARK',[
         [48.1762,11.5448],[48.1755,11.5540],[48.1730,11.5575],[48.1685,11.5570],
         [48.1662,11.5505],[48.1668,11.5448],[48.1715,11.5430] ]],
-      // --- Theresienwiese: Oktoberfest grounds; west edge follows the Bavariaring curve ---
       ['nofly','NO-FLY · THERESIENWIESE',[
         [48.1352,11.5470],[48.1350,11.5528],[48.1305,11.5530],
         [48.1292,11.5500],[48.1296,11.5458],[48.1322,11.5445] ]],
-      // --- JVA Stadelheim: correctional facility, Giesing (security-sensitive) ---
       ['nofly','NO-FLY · JVA STADELHEIM',[
         [48.1022,11.5898],[48.1016,11.5958],[48.0982,11.5965],
         [48.0972,11.5928],[48.0980,11.5885],[48.1008,11.5878] ]],
-      // --- advisory / noise-restricted (soft, drawn but do not block routing) ---
-      ['restrict','RESTRICT · ENGLISCHER GARTEN',[ // long Isar-side park, low-altitude noise advisory
+      ['nofly','NO-FLY · NYMPHENBURG',[
+        [48.1620,11.4908],[48.1638,11.5060],[48.1580,11.5120],
+        [48.1510,11.5100],[48.1490,11.4938],[48.1548,11.4865] ]],
+      ['restrict','RESTRICT · ENGLISCHER GARTEN',[
         [48.1438,11.5862],[48.1455,11.5985],[48.1570,11.6005],[48.1690,11.6008],[48.1800,11.6005],
         [48.1810,11.5950],[48.1730,11.5895],[48.1600,11.5872],[48.1495,11.5865] ]],
-      ['restrict','NOISE-CAP · ALTSTADT',[       // old town inside the Altstadtring
-        [48.1395,11.5655], // Stachus / Karlsplatz
-        [48.1422,11.5690], // Lenbachplatz / Maximiliansplatz
-        [48.1427,11.5776], // Odeonsplatz
-        [48.1379,11.5840], // Maxmonument / Thomas-Wimmer-Ring
-        [48.1352,11.5793], // Isartorplatz
-        [48.1335,11.5675], // Sendlinger Tor
-      ]],
+      ['restrict','NOISE-CAP · ALTSTADT',[
+        [48.1395,11.5655],[48.1422,11.5690],[48.1427,11.5776],
+        [48.1379,11.5840],[48.1352,11.5793],[48.1335,11.5675] ]],
     ];
     this.zones=zn.map(z=>{
       const pts=z[2].map(v=>this.LL(v[1],v[0]));
@@ -535,6 +524,13 @@ class Component extends DCLogic {
 
   // metres (east/north of the Munich reference) -> world pixels, via lon/lat + LL()
   _M2W(xm,ym){ return this.LL(this.lon0 + xm/this.mPerDegLon, this.lat0 + ym/this.mPerDegLat); }
+  _zonesFromSnapshot(zones){
+    return (zones||[]).filter(z=>z.active!==false && z.polygon && z.polygon.length>=3).map(z=>{
+      const pts=z.polygon.map(p=>this._M2W(p[0],p[1]));
+      let cx=0,cy=0; pts.forEach(p=>{cx+=p.x;cy+=p.y;}); cx/=pts.length; cy/=pts.length;
+      return {kind:z.kind||'restrict', label:(z.name||z.zone_id||'AIRSPACE').toUpperCase(), pts, x:cx, y:cy};
+    });
+  }
   _serverNow(){ return Date.now()/1000 + (this._serverClockOffset||0); }
   _hashIdx(str){ let h=0; for(let i=0;i<str.length;i++){ h=(h*31+str.charCodeAt(i))|0; } return Math.abs(h); }
   _nearestVpIdx(x,y){ let best=0,bd=1e18; (this.vertiports||[]).forEach(v=>{ const d=Math.hypot(v.x-x,v.y-y); if(d<bd){bd=d;best=v.id;} }); return best; }
@@ -553,6 +549,10 @@ class Component extends DCLogic {
       this._vidToIdx={}; this.vertiports.forEach(v=>{ this._vidToIdx[v.vid]=v.id; });
       this._buildAirspace(); this.buildHeat();
       this._liveVertiportsBuilt=true;
+    }
+    if(snap.airspace_zones && snap.airspace_zones.length){
+      this.zones=this._zonesFromSnapshot(snap.airspace_zones);
+      this._buildAirspace();
     }
 
     const routeByAgent={}, slotByAgent={};
@@ -690,11 +690,9 @@ class Component extends DCLogic {
     const cols=Math.max(2,Math.ceil(this.WORLD_W/cell));
     const rows=Math.max(2,Math.ceil(this.WORLD_H/cell));
     const blocked=new Uint8Array(cols*rows);
-    // Hard zones block the grid — EXCEPT zones that enclose a vertiport (airport,
-    // arena). Those are controlled-access: blocking them would trap the pad, so the
-    // grid stays open there and steering alone keeps transit traffic out.
-    const blockZones=(this.zones||[]).filter(z=> z.kind==='nofly' &&
-      !(this.vertiports||[]).some(v=>this._pointInPoly(v.x,v.y,z.pts)));
+    // Hard zones block the grid. Landing spots are modelled outside hard zones,
+    // so we only preserve the exact stand cell as an emergency carve-out.
+    const blockZones=(this.zones||[]).filter(z=> z.kind==='nofly');
     const vpCells=new Set((this.vertiports||[]).map(v=>{
       const cx=Math.max(0,Math.min(cols-1,Math.floor(v.x/cell)));
       const cy=Math.max(0,Math.min(rows-1,Math.floor(v.y/cell))); return cy*cols+cx; }));
@@ -820,9 +818,9 @@ class Component extends DCLogic {
     const blob=(cx,cy,r,col,a)=>{ const g=x.createRadialGradient(cx,cy,0,cx,cy,r);
       g.addColorStop(0,col.replace('A',a)); g.addColorStop(1,col.replace('A','0'));
       x.fillStyle=g; x.beginPath(); x.arc(cx,cy,r,0,7); x.fill(); };
-    (this.vertiports||[]).forEach(v=>{ blob(v.x,v.y,76,'rgba(225,120,20,A)',0.05); });
+    (this.vertiports||[]).forEach(v=>{ blob(v.x,v.y,76,'rgba(225,120,20,A)',0.09); });
     this.residential.forEach((p,i)=>{ const hot=i%3===0;
-      blob(p.x,p.y, hot?120:88, hot?'rgba(214,70,40,A)':'rgba(225,140,25,A)', hot?0.13:0.08); });
+      blob(p.x,p.y, hot?120:88, hot?'rgba(214,70,40,A)':'rgba(225,140,25,A)', hot?0.20:0.13); });
     this.buildHeatCanvas=cv; this.heatCanvas=cv;
   }
 
@@ -1164,7 +1162,7 @@ class Component extends DCLogic {
   }
 
   _drawHeat(ctx){ const tl=this.W2S(0,0), br=this.W2S(this.WORLD_W,this.WORLD_H);
-    ctx.save(); const pulse=0.92+0.08*Math.sin(this.t*1.3); ctx.globalAlpha=0.62*pulse;
+    ctx.save(); const pulse=0.92+0.08*Math.sin(this.t*1.3); ctx.globalAlpha=0.8*pulse;
     try{ ctx.drawImage(this.heatCanvas, tl.x, tl.y, br.x-tl.x, br.y-tl.y); }catch(e){} ctx.restore(); }
 
   _drawZones(ctx){ const C=this.C;

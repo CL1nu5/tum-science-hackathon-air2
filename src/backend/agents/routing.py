@@ -69,115 +69,119 @@ def lateral_offset_position(
 # RouteFollower — advances agent state along assigned 4D waypoints
 # ---------------------------------------------------------------------------
 
+def interpolate_route_4d(
+    route: list[Waypoint], now: float
+) -> tuple[tuple[float, float, float], int]:
+    """Position on the reserved 4D corridor at wall-clock time ``now``.
+
+    Returns ((x, y, z), segment_index). Clamps to the endpoints outside the
+    schedule window. This is the single source of truth for where a taxi is, and
+    it mirrors the dashboard's own corridor interpolation so the tower view and
+    the simulated motion never disagree.
+    """
+    if not route:
+        return (0.0, 0.0, 0.0), 0
+    if now <= route[0].t:
+        w = route[0]
+        return (w.x, w.y, w.z), 0
+    last = route[-1]
+    if now >= last.t:
+        return (last.x, last.y, last.z), max(0, len(route) - 2)
+    for i in range(len(route) - 1):
+        a, b = route[i], route[i + 1]
+        if a.t <= now <= b.t:
+            span = (b.t - a.t) or 1.0
+            f = (now - a.t) / span
+            return (
+                a.x + (b.x - a.x) * f,
+                a.y + (b.y - a.y) * f,
+                a.z + (b.z - a.z) * f,
+            ), i
+    return (last.x, last.y, last.z), max(0, len(route) - 2)
+
+
 class RouteFollower:
     """
-    Stateless helper: given the current AgentState and elapsed time dt,
-    returns the updated position, velocity, altitude, and flight stage.
-    Call step() each simulation tick.
+    Advances an agent along its reserved 4D corridor by interpolating the
+    corridor at the current wall-clock time.
+
+    Why time-interpolation instead of "chase the next waypoint at some speed":
+    the previous chase model paced speed = remaining_distance / remaining_time
+    with a 0.5 m/s floor, so an on-schedule taxi decelerated asymptotically and
+    *froze* mid-air without ever reaching a waypoint — taxis never landed, stands
+    never freed and the whole fleet jammed. Following the schedule by time makes
+    motion always progress, keeps altitude a smooth ramp, and matches the
+    dashboard exactly. Holding (delaying the approach) is expressed by sliding the
+    unflown tail of the schedule forward in time — see EvtolAgent._hold.
     """
 
     LATERAL_OFFSET_M: float = 18.0   # yielding offset during V2V deconfliction
 
     def step(self, state: AgentState, dt: float) -> dict:
-        """
-        Returns a dict of fields to update on AgentState.
-        Pure function — does not mutate state.
-        """
+        """Return a dict of fields to update on AgentState. Does not mutate state."""
         route = state.assigned_route
         if not route or state.flight_stage in (
             FlightStage.PARKED, FlightStage.PRE_FLIGHT,
             FlightStage.AWAITING_TAKEOFF, FlightStage.ON_PAD,
         ):
             return {}
+        if len(route) < 2:
+            return {}
 
-        idx = state.current_waypoint_idx
-        if idx >= len(route):
-            return {"flight_stage": FlightStage.ON_PAD}
+        now = time.time()
+        (cx, cy, cz), seg = interpolate_route_4d(route, now)
 
-        target = route[idx]
-        tx, ty, tz = target.x, target.y, target.z
-        cx, cy = state.position
-        cz = state.altitude
-
-        # Distance to next waypoint
-        dist_2d = distance_2d((cx, cy), (tx, ty))
-        dist_3d = distance_3d((cx, cy, cz), (tx, ty, tz))
-
-        # Follow the reserved 4D schedule rather than only its geometry.
-        remaining_s = target.t - time.time()
-        if remaining_s > dt:
-            speed = max(0.5, min(dist_3d / remaining_s, CRUISE_SPEED_MS * 1.3))
-            if state.flight_stage == FlightStage.FINAL_APPROACH:
-                speed = min(speed, APPROACH_SPEED_MS)
-        elif state.flight_stage == FlightStage.FINAL_APPROACH:
-            speed = APPROACH_SPEED_MS
-        elif state.flight_stage == FlightStage.CLIMBING:
-            speed = CRUISE_SPEED_MS * 0.6
-        elif state.flight_stage == FlightStage.DESCENDING:
-            speed = CRUISE_SPEED_MS * 0.8
+        # Heading + ground speed come from the active corridor segment.
+        a = route[seg]
+        b = route[min(seg + 1, len(route) - 1)]
+        dx, dy = b.x - a.x, b.y - a.y
+        hmag = math.hypot(dx, dy)
+        if hmag > 1e-6:
+            ux, uy = dx / hmag, dy / hmag
         else:
-            speed = state.speed if state.speed > 0 else CRUISE_SPEED_MS
+            ux, uy = 0.0, 0.0
+        seg_dur = (b.t - a.t) or 1.0
+        speed = hmag / seg_dur
+        vx, vy = ux * speed, uy * speed
 
-        step_dist = speed * dt
+        # Lateral offset is a *fixed* perpendicular shift off the corridor
+        # centreline, recomputed each tick from the clean interpolated point — it
+        # never accumulates onto a drifting position (the old bug sent taxis
+        # kilometres off course), and the agent decays it back to 0 once clear.
+        if state.lateral_offset != 0.0 and (ux or uy):
+            px, py = -uy, ux
+            cx += px * state.lateral_offset
+            cy += py * state.lateral_offset
 
-        if dist_3d < step_dist:
-            # Reached this waypoint — advance to next
-            next_idx = idx + 1
-            if next_idx >= len(route):
-                return {
-                    "position": (tx, ty),
-                    "altitude": tz,
-                    "velocity": (0.0, 0.0),
-                    "speed": 0.0,
-                    "current_waypoint_idx": next_idx,
-                    "flight_stage": FlightStage.ON_PAD,
-                }
+        # End of the (possibly hold-extended) schedule → touch down.
+        if now >= route[-1].t - 1e-3:
+            dest = route[-1]
             return {
-                "position": (tx, ty),
-                "altitude": tz,
-                "current_waypoint_idx": next_idx,
-                "speed": speed,
+                "position": (dest.x, dest.y),
+                "altitude": dest.z,
+                "velocity": (0.0, 0.0),
+                "speed": 0.0,
+                "current_waypoint_idx": len(route),
+                "flight_stage": FlightStage.ON_PAD,
             }
 
-        # Move toward waypoint
-        ratio = step_dist / dist_3d
-        new_x = cx + (tx - cx) * ratio
-        new_y = cy + (ty - cy) * ratio
-        new_z = cz + (tz - cz) * ratio
-
-        vx = (tx - cx) / dist_3d * speed
-        vy = (ty - cy) / dist_3d * speed
-
-        # Apply lateral offset if in deconfliction mode
-        if state.lateral_offset != 0.0:
-            new_x, new_y = lateral_offset_position(
-                (new_x, new_y), (vx, vy), state.lateral_offset
-            )
-
-        # Determine flight stage transitions based on distance to final destination
+        # Stage transitions by distance to the destination pad.
         new_stage = state.flight_stage
-        if route:
-            dest = route[-1]
-            dist_to_dest = distance_2d((new_x, new_y), (dest.x, dest.y))
-            if (
-                new_stage == FlightStage.EN_ROUTE
-                and dist_to_dest < DESCEND_RADIUS_M
-            ):
-                new_stage = FlightStage.DESCENDING
-            elif (
-                new_stage == FlightStage.DESCENDING
-                and dist_to_dest < FINAL_APPROACH_RADIUS_M
-            ):
-                new_stage = FlightStage.FINAL_APPROACH
+        dest = route[-1]
+        dist_to_dest = distance_2d((cx, cy), (dest.x, dest.y))
+        if new_stage == FlightStage.EN_ROUTE and dist_to_dest < DESCEND_RADIUS_M:
+            new_stage = FlightStage.DESCENDING
+        elif new_stage == FlightStage.DESCENDING and dist_to_dest < FINAL_APPROACH_RADIUS_M:
+            new_stage = FlightStage.FINAL_APPROACH
 
-        updates: dict = {
-            "position": (new_x, new_y),
-            "altitude": new_z,
+        return {
+            "position": (cx, cy),
+            "altitude": cz,
             "velocity": (vx, vy),
             "speed": speed,
+            "current_waypoint_idx": seg + 1,
             "flight_stage": new_stage,
         }
-        return updates
 
 
 # ---------------------------------------------------------------------------
