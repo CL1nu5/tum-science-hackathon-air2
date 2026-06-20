@@ -3,11 +3,31 @@ from __future__ import annotations
 import asyncio
 import copy
 import json
+import math
 import os
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+
+# --- Shared geographic projection (must match the frontend) -----------------
+# A local equirectangular projection around Munich's centre. Positions are
+# stored in METRES with x east-positive and y north-positive. The dashboard
+# converts these back to lon/lat and onto its Web-Mercator basemap, so the
+# tower and the map agree on where everything is.
+GEO_LAT0 = 48.137
+GEO_LON0 = 11.576
+GEO_M_PER_DEG_LAT = 111_320.0
+GEO_M_PER_DEG_LON = 111_320.0 * math.cos(math.radians(GEO_LAT0))
+
+
+def project(lat: float, lon: float) -> list[float]:
+    """Real (lat, lon) -> local [x_east_m, y_north_m]."""
+    return [
+        round((lon - GEO_LON0) * GEO_M_PER_DEG_LON, 1),
+        round((lat - GEO_LAT0) * GEO_M_PER_DEG_LAT, 1),
+    ]
 
 
 def now_iso() -> str:
@@ -18,83 +38,56 @@ def new_id() -> str:
     return str(uuid.uuid4())
 
 
+# Real Munich landing network (kept byte-compatible with
+# src/frontend/landing-pads.csv) plus two dedicated emergency surfaces.
+# Columns: id, name, short, lat, lon, stands, operator, surface_type, suitability
+_INFRASTRUCTURE = [
+    ("RDI", "Klinikum rechts der Isar", "RDI", 48.1370, 11.5996, 2, "AIR2", "vertiport", 1.0),
+    ("GRH", "Klinikum Großhadern", "GRH", 48.1108, 11.4700, 2, "AIR2", "vertiport", 1.0),
+    ("SWB", "München Klinik Schwabing", "SWB", 48.1786, 11.5707, 2, "AIR2", "vertiport", 1.0),
+    ("BOG", "München Klinik Bogenhausen", "BOG", 48.1530, 11.6360, 2, "AIR2", "vertiport", 1.0),
+    ("HAR", "München Klinik Harlaching", "HAR", 48.0915, 11.5565, 2, "AIR2", "vertiport", 1.0),
+    ("TUM", "TUM City", "TUM", 48.1496, 11.5680, 4, "AIR2", "vertiport", 1.0),
+    ("GAR", "TUM Garching", "GAR", 48.2648, 11.6715, 5, "AIR2", "vertiport", 1.0),
+    ("BEG", "BMW Englischer Garten", "BEG", 48.1642, 11.6020, 3, "AIR2", "vertiport", 1.0),
+    ("MSO", "Messestadt Ost", "MSO", 48.1340, 11.6960, 4, "AIR2", "vertiport", 1.0),
+    ("LMU", "LMU", "LMU", 48.1505, 11.5805, 4, "AIR2", "vertiport", 1.0),
+    ("BMT", "BMW Tower", "BMT", 48.1767, 11.5586, 4, "AIR2", "vertiport", 1.0),
+    ("MUC", "Airport Munich", "MUC", 48.3538, 11.7861, 6, "OTHER", "vertiport", 1.0),
+    ("ARE", "Allianz Arena", "ARE", 48.2188, 11.6247, 5, "OTHER", "vertiport", 1.0),
+    ("PAS", "Pasing", "PAS", 48.1502, 11.4612, 4, "AIR2", "vertiport", 1.0),
+    ("OST", "Ostbahnhof", "OST", 48.1270, 11.6048, 4, "AIR2", "vertiport", 1.0),
+    ("SIE", "Siemens Werke", "SIE", 48.0853, 11.6363, 4, "AIR2", "vertiport", 1.0),
+    ("GRW", "Grünwald", "GRW", 48.0707, 11.5267, 3, "AIR2", "vertiport", 1.0),
+    # Dedicated emergency landing surfaces (no scheduled stands).
+    ("EMER-01", "Prepared emergency surface", "EMR", 48.1310, 11.5470, 0, "PUBLIC", "light_red", 0.6),
+    ("FIELD-01", "Open emergency field", "FLD", 48.0950, 11.6850, 0, "PUBLIC", "dark_red", 0.4),
+]
+
+
 def default_state() -> dict[str, Any]:
-    vertiports = {
-        "VP-01": {
-            "vertiport_id": "VP-01",
-            "name": "Olympiapark",
-            "position": [-4200.0, 2100.0],
+    vertiports: dict[str, Any] = {}
+    stands: dict[str, Any] = {}
+    for (vid, name, short, lat, lon, stand_count, operator, surface, suitability) in _INFRASTRUCTURE:
+        vertiports[vid] = {
+            "vertiport_id": vid,
+            "name": name,
+            "short": short,
+            "lat": lat,
+            "lon": lon,
+            "position": project(lat, lon),
             "elevation_m": 0.0,
-            "operator": "AIR2",
-            "surface_type": "vertiport",
-            "suitability_score": 1.0,
+            "operator": operator,
+            "surface_type": surface,
+            "suitability_score": suitability,
             "pad_available": True,
             "active": True,
-        },
-        "VP-02": {
-            "vertiport_id": "VP-02",
-            "name": "Messe Riem",
-            "position": [6500.0, 1200.0],
-            "elevation_m": 0.0,
-            "operator": "AIR2",
-            "surface_type": "vertiport",
-            "suitability_score": 1.0,
-            "pad_available": True,
-            "active": True,
-        },
-        "VP-03": {
-            "vertiport_id": "VP-03",
-            "name": "Harlaching",
-            "position": [1400.0, -5100.0],
-            "elevation_m": 0.0,
-            "operator": "AIR2",
-            "surface_type": "vertiport",
-            "suitability_score": 1.0,
-            "pad_available": True,
-            "active": True,
-        },
-        "VP-04": {
-            "vertiport_id": "VP-04",
-            "name": "Schwabing",
-            "position": [-600.0, 3900.0],
-            "elevation_m": 0.0,
-            "operator": "OTHER",
-            "surface_type": "vertiport",
-            "suitability_score": 1.0,
-            "pad_available": True,
-            "active": True,
-        },
-        "EMER-01": {
-            "vertiport_id": "EMER-01",
-            "name": "Prepared emergency surface",
-            "position": [2600.0, -800.0],
-            "elevation_m": 0.0,
-            "operator": "PUBLIC",
-            "surface_type": "light_red",
-            "suitability_score": 0.6,
-            "pad_available": True,
-            "active": True,
-        },
-        "FIELD-01": {
-            "vertiport_id": "FIELD-01",
-            "name": "Open emergency field",
-            "position": [-5200.0, -3500.0],
-            "elevation_m": 0.0,
-            "operator": "PUBLIC",
-            "surface_type": "dark_red",
-            "suitability_score": 0.4,
-            "pad_available": True,
-            "active": True,
-        },
-    }
-    stand_counts = {"VP-01": 4, "VP-02": 3, "VP-03": 3, "VP-04": 2}
-    stands = {}
-    for vertiport_id, count in stand_counts.items():
-        for index in range(count):
-            stand_id = f"{vertiport_id}-S{index + 1:02d}"
+        }
+        for index in range(stand_count):
+            stand_id = f"{vid}-S{index + 1:02d}"
             stands[stand_id] = {
                 "stand_id": stand_id,
-                "vertiport_id": vertiport_id,
+                "vertiport_id": vid,
                 "name": stand_id,
                 "occupied_by": None,
                 "active": True,

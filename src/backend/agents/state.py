@@ -93,6 +93,7 @@ class AgentState:
     slot_vertiport: str | None = None
     slot_time: str | None = None    # ISO timestamp of reserved slot
     stand_id: str | None = None
+    parked_vertiport: str | None = None  # where the taxi is currently parked (if any)
 
     # Energy / option awareness
     reachable_options: list[str] = field(default_factory=list)  # vertiport IDs

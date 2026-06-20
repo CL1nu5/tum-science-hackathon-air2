@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import random
 import time
 from datetime import datetime, timezone
 from typing import Any
@@ -10,11 +11,17 @@ from .communication import TowerClient, V2VNetwork
 from .config import (
     BATTERY_DRAIN_EMERGENCY,
     BATTERY_DRAIN_PER_S,
+    BATTERY_RECHARGE_PER_S,
     BROADCAST_INTERVAL_S,
     CRUISE_SPEED_MS,
+    DISPATCH_RETRY_S,
+    EMERGENCY_FAULT_MTBF_S,
+    EMERGENCY_REDECLARE_S,
     EMERGENCY_THRESHOLD_PCT,
     HUMAN_TIMEOUT_S,
     MAX_REROUTE_PER_FLIGHT,
+    PARKED_DWELL_S,
+    REDISPATCH_MIN_BATTERY_PCT,
     STATE_UPDATE_INTERVAL_S,
     SIM_TICK_S,
     TOWER_WS_URL,
@@ -34,6 +41,7 @@ from .messages import (
     LockRequest,
     PositionBroadcast,
     PreemptNotice,
+    ProtocolError,
     RouteAssignment,
     RouteRequest,
     StateUpdate,
@@ -72,6 +80,7 @@ class EvtolAgent:
         initial_battery: float = 100.0,
         tower_url: str | None = None,
         vertiport_candidates: list[VertiportInfo] | None = None,
+        destination_pool: list[str] | None = None,
     ) -> None:
         self.state = AgentState(
             agent_id=agent_id,
@@ -86,8 +95,18 @@ class EvtolAgent:
         self.v2v = V2VNetwork(agent_id, self.tower)
         self._route_follower = RouteFollower()
         self._vertiport_candidates: list[VertiportInfo] = vertiport_candidates or []
-        self._pending_destination: str | None = None
+        # Pool of vertiport IDs this taxi may be dispatched to (own-operator pads).
+        self._destination_pool: list[str] = destination_pool or [
+            v.vertiport_id
+            for v in self._vertiport_candidates
+            if v.is_own_operator and v.surface_type == "vertiport"
+        ]
+        self._initial_destination: str | None = None
+        # Stagger the first dispatch so a large fleet doesn't request every route
+        # in the same instant (smooths take-off contention on shared pads).
+        self._next_dispatch_at: float = time.monotonic() + random.uniform(0.0, 12.0)
         self._emergency_handled: bool = False
+        self._emergency_declared_at: float = 0.0
         self._human_escalation_timer: float | None = None
         self._route_granted: bool = False
         self._slot_granted: bool = False
@@ -111,11 +130,12 @@ class EvtolAgent:
             self._battery_loop(),
             self._state_update_loop(),
             self._slot_lifecycle_loop(),
+            self._dispatch_loop(),
         )
 
     def set_destination(self, vertiport_id: str) -> None:
-        """Set (or update) the destination. Will trigger a route request next tick."""
-        self._pending_destination = vertiport_id
+        """Set the first destination the taxi flies to once airborne capacity allows."""
+        self._initial_destination = vertiport_id
 
     # -----------------------------------------------------------------------
     # Tower message handlers
@@ -127,6 +147,7 @@ class EvtolAgent:
         self.tower.subscribe("LANDING_CLEARANCE", self._on_landing_clearance)
         self.tower.subscribe("EMERGENCY_RESOLUTION", self._on_emergency_resolution)
         self.tower.subscribe("PREEMPT_NOTICE", self._on_preempt_notice)
+        self.tower.subscribe("PROTOCOL_ERROR", self._on_protocol_error)
         self.tower.subscribe("HEARTBEAT", self._on_heartbeat)
         self.tower.subscribe("SYNC_REQUEST", self._on_sync_request)
         self.tower.subscribe("TOWER_DOWN", self._on_tower_down)
@@ -229,6 +250,19 @@ class EvtolAgent:
             # Immune: hold current plan, tower must resolve
             log.info("[%s] Reroute limit reached — immune to further preemption", self.state.agent_id)
 
+    async def _on_protocol_error(self, msg: ProtocolError) -> None:
+        s = self.state
+        log.warning("[%s] Tower rejected %s: %s", s.agent_id, msg.code, msg.message)
+        # A rejected take-off request (busy airspace / no conflict-free route)
+        # drops us back to PARKED so the dispatch loop retries after a backoff.
+        # NO_FREE_STAND during approach self-retries via the slot lifecycle loop.
+        if s.flight_stage == FlightStage.PRE_FLIGHT and not s.assigned_route:
+            s.flight_stage = FlightStage.PARKED
+            s.slot_stage = SlotStage.NONE
+            self._route_granted = False
+            self._slot_granted = False
+            self._next_dispatch_at = time.monotonic() + DISPATCH_RETRY_S
+
     async def _on_tower_down(self, msg: TowerDown) -> None:
         log.warning("[%s] Tower connection lost — switching to V2V-only mode", self.state.agent_id)
         # In V2V-only mode, the agent continues on its current route and
@@ -270,7 +304,7 @@ class EvtolAgent:
 
         # Run deconfliction from our side
         peer_metric = msg.priority_metric
-        offset = V2VDeconfliction.negotiate(s, peer_metric)
+        offset = V2VDeconfliction.negotiate(s, peer_metric, msg.from_agent)
         if offset != 0.0:
             self.state.lateral_offset = offset
             ack.i_will_yield = True
@@ -296,7 +330,7 @@ class EvtolAgent:
             )
         else:
             # We need to yield
-            offset = V2VDeconfliction.negotiate(self.state, msg.priority_metric)
+            offset = V2VDeconfliction.negotiate(self.state, msg.priority_metric, msg.from_agent)
             self.state.lateral_offset = offset
 
     async def _on_peer_emergency(self, msg: EmergencyDeclaration) -> None:
@@ -332,14 +366,6 @@ class EvtolAgent:
                 s.battery_pct, len(s.reachable_options)
             )
 
-            # --- Destination request ---
-            if self._pending_destination and s.flight_stage == FlightStage.PARKED:
-                dest = self._pending_destination
-                self._pending_destination = None
-                s.destination_vertiport = dest
-                s.flight_stage = FlightStage.PRE_FLIGHT
-                await self._request_route(dest)
-
             # --- Advance route ---
             if s.flight_stage not in (
                 FlightStage.PARKED, FlightStage.PRE_FLIGHT,
@@ -369,7 +395,16 @@ class EvtolAgent:
                 log.info("[%s] Taking off", s.agent_id)
 
             # --- CLIMBING → EN_ROUTE once at cruise altitude ---
-            if s.flight_stage == FlightStage.CLIMBING and s.altitude >= s.assigned_route[0].z if s.assigned_route else False:
+            cruise_alt = (
+                s.assigned_route[1].z
+                if len(s.assigned_route) > 1
+                else None
+            )
+            if (
+                s.flight_stage == FlightStage.CLIMBING
+                and cruise_alt is not None
+                and s.altitude >= cruise_alt - 1.0
+            ):
                 s.flight_stage = FlightStage.EN_ROUTE
                 s.speed = CRUISE_SPEED_MS
 
@@ -386,11 +421,18 @@ class EvtolAgent:
                     ))
                 s.slot_stage = SlotStage.PARKED
                 s.flight_stage = FlightStage.PARKED
+                s.status = AgentStatus.NORMAL
+                s.parked_vertiport = s.slot_vertiport
                 s.assigned_route = []
+                s.current_waypoint_idx = 0
+                s.destination_vertiport = None
                 s.speed = 0.0
                 s.lateral_offset = 0.0
                 s.reroute_count = 0
                 self._emergency_handled = False
+                self._human_escalation_timer = None
+                # Recharge, dwell briefly, then the dispatch loop sends it out again.
+                self._next_dispatch_at = time.monotonic() + PARKED_DWELL_S
                 log.info("[%s] Parked at %s", s.agent_id, s.slot_vertiport)
 
     # -----------------------------------------------------------------------
@@ -406,14 +448,51 @@ class EvtolAgent:
             last = now
 
             s = self.state
-            if s.flight_stage in (FlightStage.PARKED, FlightStage.PRE_FLIGHT, FlightStage.AWAITING_TAKEOFF):
+
+            # Keep flagging an unresolved human takeover (concept §5 hard timeout).
+            if (
+                self._human_escalation_timer is not None
+                and now - self._human_escalation_timer > HUMAN_TIMEOUT_S
+            ):
+                log.critical(
+                    "[%s] Human takeover still pending after %.0fs",
+                    s.agent_id,
+                    HUMAN_TIMEOUT_S,
+                )
+                self._human_escalation_timer = now
+
+            if s.flight_stage == FlightStage.PARKED:
+                # Recharge on the stand so the taxi can fly another leg.
+                s.battery_pct = min(100.0, s.battery_pct + BATTERY_RECHARGE_PER_S * dt)
+                continue
+            if s.flight_stage in (FlightStage.PRE_FLIGHT, FlightStage.AWAITING_TAKEOFF):
                 continue
 
             drain = BATTERY_DRAIN_EMERGENCY if s.status == AgentStatus.EMERGENCY else BATTERY_DRAIN_PER_S
             s.battery_pct = max(0.0, s.battery_pct - drain * dt)
 
-            if s.battery_pct < EMERGENCY_THRESHOLD_PCT and not self._emergency_handled:
-                await self._declare_emergency("LOW_BATTERY")
+            # Rare simulated in-flight fault -> sudden critical energy state, so
+            # the tower's emergency cascade is exercised even when batteries are
+            # otherwise healthy (concept §4: "failure, low/empty battery").
+            if (
+                EMERGENCY_FAULT_MTBF_S > 0
+                and not self._emergency_handled
+                and s.flight_stage in (FlightStage.EN_ROUTE, FlightStage.CLIMBING)
+                and random.random() < dt / EMERGENCY_FAULT_MTBF_S
+            ):
+                # Drop to a constrained-but-still-recoverable state so the tower
+                # can usually reroute it (occasionally escalating to a human).
+                s.battery_pct = min(s.battery_pct, 24.0 + random.random() * 6.0)
+                await self._declare_emergency("SYSTEM_FAULT")
+                continue
+
+            if s.battery_pct < EMERGENCY_THRESHOLD_PCT:
+                if not self._emergency_handled:
+                    await self._declare_emergency("LOW_BATTERY")
+                elif now - self._emergency_declared_at > EMERGENCY_REDECLARE_S:
+                    # The previous declaration never produced a usable landing;
+                    # try again (a slot or surface may have freed up since).
+                    await self._declare_emergency("LOW_BATTERY_RETRY")
 
     # -----------------------------------------------------------------------
     # Periodic state update to tower
@@ -476,11 +555,50 @@ class EvtolAgent:
                     ))
 
     # -----------------------------------------------------------------------
+    # Dispatch (continuous operation)
+    # -----------------------------------------------------------------------
+
+    async def _dispatch_loop(self) -> None:
+        """When parked and charged, fly the taxi to a fresh destination."""
+        while True:
+            await asyncio.sleep(1.0)
+            s = self.state
+            if s.flight_stage != FlightStage.PARKED:
+                continue
+            if not self.tower.tower_alive:
+                continue
+            if time.monotonic() < self._next_dispatch_at:
+                continue
+            if s.battery_pct < REDISPATCH_MIN_BATTERY_PCT:
+                continue
+            destination = self._pick_destination()
+            if not destination:
+                continue
+            self._next_dispatch_at = time.monotonic() + DISPATCH_RETRY_S
+            self._route_granted = False
+            self._slot_granted = False
+            s.destination_vertiport = destination
+            s.flight_stage = FlightStage.PRE_FLIGHT
+            await self._request_route(destination)
+
+    def _pick_destination(self) -> str | None:
+        if self._initial_destination:
+            dest = self._initial_destination
+            self._initial_destination = None
+            return dest
+        here = self.state.parked_vertiport or self.state.slot_vertiport
+        pool = [vid for vid in self._destination_pool if vid != here]
+        if not pool:
+            pool = list(self._destination_pool)
+        return random.choice(pool) if pool else None
+
+    # -----------------------------------------------------------------------
     # Emergency handling
     # -----------------------------------------------------------------------
 
     async def _declare_emergency(self, reason: str) -> None:
         self._emergency_handled = True
+        self._emergency_declared_at = time.monotonic()
         s = self.state
         s.status = AgentStatus.EMERGENCY
         log.warning("[%s] EMERGENCY declared: %s (battery=%.1f%%)", s.agent_id, reason, s.battery_pct)
@@ -528,15 +646,18 @@ class EvtolAgent:
         log.info("[%s] Route requested to %s", s.agent_id, destination)
 
     def _update_reachable_options(self) -> None:
-        """Recompute which vertiports are within energy range."""
+        """Recompute which vertiports are within energy range of our position."""
+        from math import hypot
+
         from .priority import is_reachable
         s = self.state
         speed = s.speed if s.speed > 0 else CRUISE_SPEED_MS
-        s.reachable_options = [
-            v.vertiport_id
-            for v in self._vertiport_candidates
-            if is_reachable(s.battery_pct, v.distance_m, speed, BATTERY_DRAIN_PER_S)
-        ]
+        options = []
+        for v in self._vertiport_candidates:
+            distance = hypot(v.x - s.position[0], v.y - s.position[1])
+            if is_reachable(s.battery_pct, distance, speed, BATTERY_DRAIN_PER_S):
+                options.append(v.vertiport_id)
+        s.reachable_options = options
 
     def _maybe_mark_ready_for_takeoff(self) -> None:
         if not (self._route_granted and self._slot_granted):

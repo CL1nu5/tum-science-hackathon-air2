@@ -96,6 +96,14 @@ async def dashboard_support() -> FileResponse:
     )
 
 
+@app.get("/landing-pads.csv")
+async def dashboard_landing_pads() -> FileResponse:
+    return FileResponse(
+        Path(__file__).resolve().parents[2] / "frontend" / "landing-pads.csv",
+        media_type="text/csv",
+    )
+
+
 @app.get("/health")
 async def health() -> dict[str, Any]:
     return {
@@ -440,7 +448,9 @@ async def _handle_agent_message(agent_id: str, message: BaseMessage) -> None:
         await connections.send_agent(agent_id, response)
     if victim_notice:
         await connections.send_agent(*victim_notice)
-    await _publish_change(message.type, agent_id)
+    # Heartbeats are pure liveness chatter; don't make every dashboard refetch on them.
+    if message.type not in ("HEARTBEAT", "HEARTBEAT_ACK"):
+        await _publish_change(message.type, agent_id)
 
 
 def _plan_messages(plan: FlightPlan) -> list[BaseMessage]:
@@ -515,6 +525,7 @@ async def _cleanup_loop() -> None:
         now = datetime.now(timezone.utc)
         changed = False
         async with store.lock:
+            expired_agents: set[str] = set()
             for slot in store.state["pad_reservations"].values():
                 if (
                     slot.get("active", True)
@@ -524,6 +535,7 @@ async def _cleanup_loop() -> None:
                     slot["active"] = False
                     slot["revision"] += 1
                     changed = True
+                    expired_agents.add(slot["agent_id"])
             for route in store.state["routes"].values():
                 if (
                     route.get("active", True)
@@ -532,6 +544,23 @@ async def _cleanup_loop() -> None:
                     route["active"] = False
                     route["revision"] += 1
                     changed = True
+                    expired_agents.add(route["agent_id"])
+            # A flight plan is a route+slot pair: if one half lapsed, retire the
+            # other too so no orphaned corridor or held pad interval lingers
+            # (hard-locked slots belong to a landing taxi and are left alone).
+            for agent_id in expired_agents:
+                for route in store.state["routes"].values():
+                    if route["agent_id"] == agent_id and route.get("active", True):
+                        route["active"] = False
+                        route["revision"] += 1
+                for slot in store.state["pad_reservations"].values():
+                    if (
+                        slot["agent_id"] == agent_id
+                        and slot.get("active", True)
+                        and slot["stage"] not in HARD_LOCK_STAGES
+                    ):
+                        slot["active"] = False
+                        slot["revision"] += 1
             stale_before = now - timedelta(seconds=settings.agent_stale_after_s)
             for aircraft in store.state["aircraft"].values():
                 if (

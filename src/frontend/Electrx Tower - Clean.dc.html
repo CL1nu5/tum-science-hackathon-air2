@@ -126,10 +126,10 @@
     </div>
     <div style="width:1px;height:26px;background:#e7eaef"></div>
     <div style="display:flex;align-items:center;gap:8px">
-      <div style="width:8px;height:8px;border-radius:50%;background:#18926a;animation:exPulse 2.4s infinite"></div>
+      <div style="width:8px;height:8px;border-radius:50%;background:{{ link.dot }};animation:exPulse 2.4s infinite"></div>
       <div style="display:flex;flex-direction:column;line-height:1.1">
         <span style="font-size:9px;color:#7e8b99;letter-spacing:.5px">TOWER LINK</span>
-        <span style="font-size:9.5px;color:#18926a;font-family:'IBM Plex Mono',monospace;font-weight:600">ONLINE · V2V</span>
+        <span style="font-size:9.5px;color:{{ link.color }};font-family:'IBM Plex Mono',monospace;font-weight:600">{{ link.text }}</span>
       </div>
     </div>
     <button type="button" class="theme-toggle" aria-label="{{ themeLabel }}" title="{{ themeLabel }}" onClick="{{ toggleTheme }}">{{ themeIcon }}</button>
@@ -191,7 +191,7 @@
             <div style="display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:6px">
               <div style="width:8px;height:8px;border:1.5px solid #2f6df0;border-radius:2px;flex:none"></div>
               <span style="flex:1;font-size:11px;color:#33425a;font-weight:500">{{ p.name }}</span>
-              <span style="font-size:9px;font-family:'IBM Plex Mono',monospace;color:{{ p.color }}">{{ p.free }}/{{ p.total }}</span>
+              <span style="font-size:9px;font-family:'IBM Plex Mono',monospace;color:{{ p.color }}">{{ p.free + '/' + p.total }}</span>
             </div>
           </sc-for>
         </div>
@@ -381,8 +381,13 @@ class Component extends DCLogic {
     this.t = 0;
     // pad-dependent state starts empty; filled asynchronously in _init() once the CSV loads
     this.vertiports = []; this.taxis = []; this.sectors = null; this.nav = null;
+    // live (tower) mode — populated from /ws/dashboard + /api/snapshot; falls back
+    // to the self-contained demo sim below when the tower is unreachable.
+    this.liveConnected = false; this.liveTaxis = null; this._vidToIdx = {};
+    this._serverClockOffset = 0; this._liveVertiportsBuilt = false;
     this.buildWorld();   // map projection, tiles, surfaces, zones, weather, heat (no pads)
-    this._init();        // async: load landing-pads.csv -> build pads/airspace -> taxis -> events
+    this._init();        // async: load landing-pads.csv -> build pads/airspace -> taxis -> events (demo fallback)
+    this._connectLive(); // async: connect to the real tower; live data takes over when it arrives
 
     this.refCanvas = (el)=>{ this.canvas = el; if(el) this._setupCanvas(); };
     this.refMap = (el)=>{ this.mapEl = el; };
@@ -416,6 +421,12 @@ class Component extends DCLogic {
     this.LL=(lon,lat)=>({x:lon2x(lon)-gx0, y:lat2y(lat)-gy0});
     // ground metres per world px at this latitude/zoom (for distance read-outs)
     this.mPerPx = 156543.03 * Math.cos(48.137*Math.PI/180) / Math.pow(2,Z);
+
+    // Shared local projection with the tower (src/backend/server/store.py).
+    // The backend stores positions in metres east/north of this reference; we
+    // invert to lon/lat and reuse LL() so live tracks land on the real basemap.
+    this.lat0=48.137; this.lon0=11.576;
+    this.mPerDegLat=111320; this.mPerDegLon=111320*Math.cos(this.lat0*Math.PI/180);
 
     // tile mosaic
     this.mapCanvas=document.createElement('canvas');
@@ -484,12 +495,155 @@ class Component extends DCLogic {
   // ---------- LANDING PADS (loaded from landing-pads.csv) ----------
   async _init(){
     const pads=await this._loadPads();
+    if(this.liveConnected) return;   // live tower data already took over; skip the demo sim
     this._buildPads(pads);   // -> this.vertiports + this.sectors + this.nav (airspace)
     this.initTaxis();
     this.seedEvents();
     this.buildHeat();        // re-run now that vertiports exist (adds traffic noise-heat)
     this.forceUpdate();
     if(this.canvas) this._resize();
+  }
+
+  // ---------- LIVE TOWER LINK ----------
+  // Connect to the FastAPI tower: pull /api/snapshot, then keep current via the
+  // /ws/dashboard socket (SNAPSHOT on connect + STATE_CHANGED pings -> refetch).
+  _connectLive(){
+    const httpOrigin = (location.protocol==='http:'||location.protocol==='https:') ? location.origin : 'http://localhost:8000';
+    this._httpBase = httpOrigin;
+    this._wsUrl = httpOrigin.replace(/^http/,'ws') + '/ws/dashboard';
+    this._refreshSnapshot();          // initial fetch (works even if WS is blocked)
+    const open=()=>{
+      let ws; try{ ws=new WebSocket(this._wsUrl); }catch(_){ this._scheduleReconnect(open); return; }
+      this._ws=ws;
+      ws.onmessage=(ev)=>{ try{ const m=JSON.parse(ev.data);
+        if(m.type==='SNAPSHOT'&&m.data) this._ingestSnapshot(m.data);
+        else if(m.type==='STATE_CHANGED') this._scheduleRefresh();
+      }catch(_){} };
+      ws.onclose=()=>{ this.liveConnected=false; this._scheduleReconnect(open); };
+      ws.onerror=()=>{ try{ ws.close(); }catch(_){} };
+    };
+    open();
+  }
+  _scheduleReconnect(open){ if(this._recon) return; this._recon=setTimeout(()=>{ this._recon=null; open(); }, 2000); }
+  _scheduleRefresh(){ if(this._refreshPending) return; this._refreshPending=true;
+    setTimeout(()=>{ this._refreshPending=false; this._refreshSnapshot(); }, 500); }
+  async _refreshSnapshot(){
+    try{ const res=await fetch(this._httpBase+'/api/snapshot',{cache:'no-store'});
+      if(res.ok) this._ingestSnapshot(await res.json());
+    }catch(_){ /* tower offline -> demo sim keeps running */ }
+  }
+
+  // metres (east/north of the Munich reference) -> world pixels, via lon/lat + LL()
+  _M2W(xm,ym){ return this.LL(this.lon0 + xm/this.mPerDegLon, this.lat0 + ym/this.mPerDegLat); }
+  _serverNow(){ return Date.now()/1000 + (this._serverClockOffset||0); }
+  _hashIdx(str){ let h=0; for(let i=0;i<str.length;i++){ h=(h*31+str.charCodeAt(i))|0; } return Math.abs(h); }
+  _nearestVpIdx(x,y){ let best=0,bd=1e18; (this.vertiports||[]).forEach(v=>{ const d=Math.hypot(v.x-x,v.y-y); if(d<bd){bd=d;best=v.id;} }); return best; }
+
+  _ingestSnapshot(snap){
+    if(!snap) return;
+    if(snap.generated_at){ const sv=Date.parse(snap.generated_at)/1000; if(Number.isFinite(sv)) this._serverClockOffset = sv - Date.now()/1000; }
+
+    // Vertiports come from the tower (built once / when the set changes).
+    const vps = snap.vertiports || [];
+    if(vps.length && (!this._liveVertiportsBuilt || vps.length!==this.vertiports.length)){
+      this.vertiports = vps.map((p,i)=>{ const xy=this._M2W(p.position[0], p.position[1]);
+        return { id:i, vid:p.vertiport_id, name:p.name, short:p.short||p.vertiport_id,
+                 x:xy.x, y:xy.y, stands:(p.stands&&p.stands.length)||0,
+                 surface:p.surface_type, operator:p.operator }; });
+      this._vidToIdx={}; this.vertiports.forEach(v=>{ this._vidToIdx[v.vid]=v.id; });
+      this._buildAirspace(); this.buildHeat();
+      this._liveVertiportsBuilt=true;
+    }
+
+    const routeByAgent={}, slotByAgent={};
+    (snap.routes||[]).forEach(r=>{ routeByAgent[r.agent_id]=r; });
+    (snap.pad_reservations||[]).forEach(s=>{ if(!slotByAgent[s.agent_id]) slotByAgent[s.agent_id]=s; });
+
+    const AIR=new Set(['CLIMBING','EN_ROUTE','DESCENDING','FINAL_APPROACH']);
+    const models=['Volocon V3','Aria S5','Joby J6','Lilium L7','Midnight M2','EHang E8'];
+    const prev={}; (this.liveTaxis||[]).forEach(t=>{ prev[t.callsign]=t; });
+    // stable order (and stable ids) by callsign so selection survives refreshes
+    const list=(snap.aircraft||[]).slice().sort((a,b)=> a.agent_id<b.agent_id?-1:(a.agent_id>b.agent_id?1:0));
+    this.liveTaxis = list.map((a,i)=>{
+      const cs=a.agent_id, old=prev[cs]||{};
+      const airborne=AIR.has(a.flight_stage);
+      const route=routeByAgent[cs], slot=slotByAgent[cs];
+      const wp4d=(route&&route.waypoints) || a.route || [];
+      const route4d=wp4d.filter(p=>p&&p.length>=4).map(p=>{ const xy=this._M2W(p[0],p[1]); return {x:xy.x,y:xy.y,z:p[2],t:p[3]}; });
+      const posXY=this._M2W(a.position[0], a.position[1]);
+      const destIdx=(a.destination_vertiport!=null && this._vidToIdx[a.destination_vertiport]!=null)? this._vidToIdx[a.destination_vertiport] : undefined;
+      const onGroundVp = (!airborne)? this._nearestVpIdx(posXY.x,posXY.y) : undefined;
+      return {
+        id:i, callsign:cs, model: old.model || models[this._hashIdx(cs)%models.length],
+        battery:a.battery_pct, status: a.status==='EMERGENCY'?'emergency':'normal',
+        landed: airborne?0:1,
+        x: airborne&&old.x!=null? old.x : posXY.x,
+        y: airborne&&old.y!=null? old.y : posXY.y,
+        hx: old.hx!=null? old.hx : 1, hy: old.hy!=null? old.hy : 0,
+        spd: old.spd||0, kmh: old.kmh||0, altitude_m: a.altitude_m||0,
+        route4d, route:null, wp:0,
+        goalVp: destIdx, arrivedVp: onGroundVp, originVp:undefined,
+        flightStage:a.flight_stage, slotStage:a.slot_stage,
+        etaUnix: route&&route.eta_at? Date.parse(route.eta_at)/1000 : null,
+        conflict:false, yielding:false, _serverPos:posXY,
+      };
+    });
+    this.taxis = this.liveTaxis;
+    this.events = (snap.events||[]).slice(0,40).map(e=>this._mapEvent(e));
+
+    const cells=(snap.weather||[]).filter(c=>c.active!==false);
+    if(cells.length){ const c=cells[0]; const xy=this._M2W(c.center[0],c.center[1]);
+      this.weather={x:xy.x,y:xy.y,vx:0,vy:0,r:(c.radius_m||1500)/this.mPerPx}; }
+    else { this.weather=null; }
+
+    if(!this.liveConnected){ this.liveConnected=true; if(this.selectedId!=null && this.selectedId>=this.taxis.length) this.selectedId=null; }
+    this.forceUpdate();
+  }
+
+  _mapEvent(e){
+    const sev=e.severity, ty=e.event_type;
+    let color='#6557d6';
+    if(sev==='CRITICAL'||ty==='HUMAN_TAKEOVER_REQUIRED') color='#d6463a';
+    else if(sev==='WARNING'||ty==='SLOT_PREEMPTED'||ty==='EMERGENCY_RESOLVED') color='#d98a16';
+    else if(ty==='LANDING_COMPLETED') color='#18926a';
+    else if(ty==='FLIGHT_PLAN_RESERVED') color='#2f6df0';
+    else if(ty==='AGENT_CONNECTED'||ty==='AGENT_DISCONNECTED'||ty==='WEATHER_UPDATED') color='#5a7fa8';
+    let time='';
+    try{ const d=new Date(e.created_at); const p=n=>String(n).padStart(2,'0');
+      time=p(d.getUTCHours())+':'+p(d.getUTCMinutes())+':'+p(d.getUTCSeconds()); }catch(_){}
+    return { t:time, text:e.message, color, important: sev==='CRITICAL'||sev==='WARNING' };
+  }
+
+  // Move live taxis by interpolating along their real reserved 4D corridor.
+  _tickLive(dt){
+    this.t += dt*(this.props.simSpeed??1);   // keep dashes/pulses animating
+    const now=this._serverNow();
+    const Ts=this.taxis||[];
+    Ts.forEach(t=>{
+      if(t.landed>0){ if(t._serverPos){ t.x=t._serverPos.x; t.y=t._serverPos.y; } return; }
+      const r=t.route4d;
+      if(!r||r.length<2){ if(t._serverPos){ t.x=t._serverPos.x; t.y=t._serverPos.y; } return; }
+      let seg=0, pos;
+      if(now<=r[0].t){ pos={x:r[0].x,y:r[0].y,z:r[0].z}; seg=0; }
+      else if(now>=r[r.length-1].t){ const k=r.length-1; pos={x:r[k].x,y:r[k].y,z:r[k].z}; seg=Math.max(0,k-1); }
+      else { for(let i=0;i<r.length-1;i++){ if(now>=r[i].t && now<=r[i+1].t){ const span=(r[i+1].t-r[i].t)||1, f=(now-r[i].t)/span;
+        pos={x:r[i].x+(r[i+1].x-r[i].x)*f, y:r[i].y+(r[i+1].y-r[i].y)*f, z:r[i].z+(r[i+1].z-r[i].z)*f}; seg=i; break; } } }
+      if(!pos){ const k=r.length-1; pos={x:r[k].x,y:r[k].y,z:r[k].z}; seg=Math.max(0,k-1); }
+      const a=r[seg], b=r[Math.min(seg+1,r.length-1)];
+      let hx=b.x-a.x, hy=b.y-a.y; const m=Math.hypot(hx,hy)||1; hx/=m; hy/=m;
+      t.x=pos.x; t.y=pos.y; if(pos.z!=null) t.altitude_m=pos.z; t.hx=hx; t.hy=hy;
+      t.wp=Math.min(seg+1, r.length-1);
+      t.route = r.map(p=>({x:p.x,y:p.y}));
+      const segDur=(b.t-a.t)||1, pxps=Math.hypot(b.x-a.x,b.y-a.y)/segDur;
+      t.spd=pxps; t.kmh=pxps*this.mPerPx*3.6;
+    });
+    // V2V proximity (visual coupling of nearby tracks)
+    Ts.forEach(t=>{ t.conflict=false; t.yielding=false; });
+    const crit=40, seen={};
+    for(let i=0;i<Ts.length;i++) for(let j=i+1;j<Ts.length;j++){ const a=Ts[i], b=Ts[j]; if(a.landed>0||b.landed>0) continue;
+      if(Math.hypot(a.x-b.x,a.y-b.y)<crit){ a.conflict=true; b.conflict=true; (a.battery>b.battery?a:b).yielding=true;
+        const key=a.id<b.id? a.id+'-'+b.id : b.id+'-'+a.id; seen[key]=true; if(!this.activeConflicts[key]) this.activeConflicts[key]=this.t; } }
+    Object.keys(this.activeConflicts).forEach(k=>{ if(!seen[k]) delete this.activeConflicts[k]; });
   }
 
   // Load the CSV from the file when served over http; fall back to the inline
@@ -772,10 +926,12 @@ class Component extends DCLogic {
     t.x+=t.hx*v*dt; t.y+=t.hy*v*dt;
   }
 
-  componentDidUpdate(){ const fs=this.props.fleetSize??16;
+  componentDidUpdate(){ if(this.liveConnected) return;   // fleet size is the tower's concern in live mode
+    const fs=this.props.fleetSize??16;
     if(this._fleetN!==fs){ this._fleetN=fs; this.initTaxis(); this.selectedId=null; } }
 
   tick(dt){
+    if(this.liveConnected){ this._tickLive(dt); return; }   // real tower data drives motion
     dt *= (this.props.simSpeed??1);
     this.t+=dt; this.simTime+=dt;
     const Ts=this.taxis;
@@ -845,7 +1001,10 @@ class Component extends DCLogic {
   _log(text,color,important){ this.events.unshift({t:this._clock(), text, color, important});
     if(this.events.length>40) this.events.length=40; }
 
-  _clock(){ const base=14*3600+22*60; const s=Math.floor(base+this.simTime);
+  _clock(){
+    if(this.liveConnected){ const d=new Date(); const p=n=>String(n).padStart(2,'0');
+      return p(d.getUTCHours())+':'+p(d.getUTCMinutes())+':'+p(d.getUTCSeconds()); }
+    const base=14*3600+22*60; const s=Math.floor(base+this.simTime);
     const hh=String(Math.floor(s/3600)%24).padStart(2,'0');
     const mm=String(Math.floor(s/60)%60).padStart(2,'0');
     const ss=String(s%60).padStart(2,'0'); return hh+':'+mm+':'+ss; }
@@ -920,6 +1079,7 @@ class Component extends DCLogic {
     this._dom=setInterval(()=>this.forceUpdate(),250);
   }
   componentWillUnmount(){ if(this._raf) cancelAnimationFrame(this._raf); if(this._dom) clearInterval(this._dom); if(this._ro) this._ro.disconnect();
+    if(this._ws){ try{ this._ws.close(); }catch(_){} } if(this._recon) clearTimeout(this._recon);
     if(this.canvas){ this.canvas.removeEventListener('pointerdown',this._pointerDown); this.canvas.removeEventListener('pointermove',this._pointerMove);
       this.canvas.removeEventListener('pointerup',this._pointerUp); this.canvas.removeEventListener('pointercancel',this._pointerUp);
       this.canvas.removeEventListener('wheel',this._wheel); } }
@@ -1033,7 +1193,7 @@ class Component extends DCLogic {
     });
   }
 
-  _drawWeather(ctx){ const w=this.weather; const s=this.W2S(w.x,w.y); const r=w.r*this.view.scale;
+  _drawWeather(ctx){ const w=this.weather; if(!w) return; const s=this.W2S(w.x,w.y); const r=w.r*this.view.scale;
     ctx.save();
     const g=ctx.createRadialGradient(s.x,s.y,r*0.2,s.x,s.y,r);
     g.addColorStop(0,'rgba(90,127,168,0.22)'); g.addColorStop(0.6,'rgba(110,140,175,0.11)'); g.addColorStop(1,'rgba(110,140,175,0)');
@@ -1259,9 +1419,18 @@ class Component extends DCLogic {
       const em=sTaxi.status==='emergency';
       const bcol = sTaxi.battery<22?'#d6463a': sTaxi.battery<45?'#d98a16':'#18926a';
       const etaS=Math.max(0,Math.round(this._etaTo(sTaxi)));
-      const stage = sTaxi.landed>0?'on pad': etaS<24?'final approach': etaS<60?'firm·near': etaS<130?'firm·far':'tentative';
-      const stageColor = stage==='on pad'?'#18926a': stage==='final approach'?'#d98a16': stage==='firm·near'?'#2f6df0':'#6557d6';
-      const dv=this.vertiports[this._destVp(sTaxi)];
+      let stage;
+      if(this.liveConnected){
+        const map={NONE:'tentative',TENTATIVE:'tentative',FIRM_FAR:'firm·far',FIRM_NEAR:'firm·near',FINAL_APPROACH:'final approach',ON_PAD:'on pad',PARKED:'parked'};
+        stage=map[sTaxi.slotStage||'NONE']||(sTaxi.slotStage||'tentative').toLowerCase();
+      } else {
+        stage = sTaxi.landed>0?'on pad': etaS<24?'final approach': etaS<60?'firm·near': etaS<130?'firm·far':'tentative';
+      }
+      const stageColor = (stage==='on pad'||stage==='parked')?'#18926a': stage==='final approach'?'#d98a16': stage==='firm·near'?'#2f6df0':'#6557d6';
+      const liveEta = (em)? 'PRIORITY' : (this.liveConnected && sTaxi.etaUnix
+        ? (()=>{ const l=Math.max(0,Math.round(sTaxi.etaUnix-this._serverNow())); return Math.floor(l/60)+':'+String(l%60).padStart(2,'0'); })()
+        : (Math.floor(etaS/60)+':'+String(etaS%60).padStart(2,'0')));
+      const dv=this.vertiports[this._destVp(sTaxi)]||{name:'—'};
       const opts=this.vertiports.map(v=>{ const d=this._km(Math.hypot(v.x-sTaxi.x,v.y-sTaxi.y));
         const range=sTaxi.battery/100*16; const reach=d*1.15<range;
         return {v,d,reach}; }).sort((a,b)=>a.d-b.d);
@@ -1280,9 +1449,10 @@ class Component extends DCLogic {
         statusLabel: em?'EMERGENCY':'NORMAL', statusColor: em?'#d6463a':'#2f6df0',
         statusBg: em?'#fdf1f0':'#eef4ff', headBg: em?'#fdf4f3':'#f5f8fe',
         batteryPct:Math.round(sTaxi.battery), batteryColor:bcol,
-        speed:Math.round(sTaxi.spd*7.0), altitude: 180+ (sTaxi.id%5)*45,
+        speed: this.liveConnected? Math.round(sTaxi.kmh||0) : Math.round(sTaxi.spd*7.0),
+        altitude: this.liveConnected? Math.round(sTaxi.altitude_m||0) : 180+ (sTaxi.id%5)*45,
         sectorLabel:(this._sectorOf(sTaxi.x,sTaxi.y)||{}).label||'—', destName:dv.name,
-        etaStr: em?'PRIORITY': (Math.floor(etaS/60)+':'+String(etaS%60).padStart(2,'0')),
+        etaStr: liveEta,
         slotStage:stage, stageColor, reachCount,
         constraintPct:ci, constraintColor:ccol,
         constraintLabel: ci>66?'HIGH · acts first': ci>40?'MODERATE':'LOW',
@@ -1293,14 +1463,19 @@ class Component extends DCLogic {
     const fleet=(this.taxis||[]).map(t=>{ const bcol = t.battery<22?'#d6463a': t.battery<45?'#d98a16':'#18926a';
       const scol = t.status==='emergency'?'#d6463a': t.conflict?'#d98a16':'#2f6df0';
       return { id:t.id, callsign:t.callsign, batteryPct:Math.round(t.battery), batteryColor:bcol,
-        statusColor:scol, destName:this.vertiports[this._destVp(t)].short,
+        statusColor:scol, destName:(this.vertiports[this._destVp(t)]||{}).short||'—',
         select:()=>{ this.selectedId=t.id; this.forceUpdate(); } };
     }).sort((a,b)=>a.batteryPct-b.batteryPct);
 
     const events=(this.events||[]).slice(0,18).map(e=>({ time:e.t, color:e.color,
       text:e.text, textColor: e.important?'#b23a2f': '#54616f' }));
 
+    const link = this.liveConnected
+      ? { text:'ONLINE · LIVE', color:'#18926a', dot:'#18926a' }
+      : { text:'DEMO · OFFLINE', color:'#d98a16', dot:'#d98a16' };
+
     return {
+      link,
       zoomLabel:Math.round(this.zoom*100)+'%',
       themeIcon:this.isDark?'☀':'☾',
       themeLabel:this.isDark?'Switch to light mode':'Switch to dark mode',

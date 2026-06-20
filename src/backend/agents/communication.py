@@ -166,6 +166,7 @@ class V2VNetwork:
     ) -> None:
         self.agent_id = agent_id
         self.tower_client = tower_client
+        self.ws_port: int | None = None  # actual bound V2V handshake port
         self.nearby_agents: dict[str, AgentState] = {}  # agent_id → last known state
         self._handlers: dict[str, list[MessageHandler]] = {}
         self._my_state_ref: AgentState | None = None    # set by EvtolAgent each tick
@@ -256,19 +257,34 @@ class V2VNetwork:
             log.warning("websockets not installed; V2V WS handshake server disabled")
             return
 
-        port = V2V_WS_PORT + _agent_port_offset(self.agent_id)
-        log.info("[%s] V2V WS server listening on port %d", self.agent_id, port)
-
         async def _on_conn(ws: Any) -> None:
-            async for raw in ws:
-                try:
-                    msg = parse_message(raw)
-                    await self._fire(msg.type, msg)
-                except Exception as exc:
-                    log.debug("[%s] V2V WS parse error: %s", self.agent_id, exc)
+            # Peers open a short-lived connection, send one message, and drop it,
+            # so a closed connection mid-iteration is normal, not an error.
+            try:
+                async for raw in ws:
+                    try:
+                        msg = parse_message(raw)
+                        await self._fire(msg.type, msg)
+                    except Exception as exc:
+                        log.debug("[%s] V2V WS parse error: %s", self.agent_id, exc)
+            except Exception as exc:
+                log.debug("[%s] V2V WS connection closed: %s", self.agent_id, exc)
 
-        async with websockets.serve(_on_conn, "0.0.0.0", port):
-            await asyncio.Future()  # serve forever
+        # If our preferred port is taken (large fleets in one process can still
+        # collide), scan upward for a free one rather than crashing the agent.
+        base = V2V_WS_PORT + _agent_port_offset(self.agent_id)
+        for candidate in range(base, base + 60):
+            try:
+                async with websockets.serve(_on_conn, "0.0.0.0", candidate):
+                    self.ws_port = candidate
+                    log.info("[%s] V2V WS server listening on port %d", self.agent_id, candidate)
+                    await asyncio.Future()  # serve forever
+            except asyncio.CancelledError:
+                raise
+            except OSError:
+                continue  # port busy -> try the next one
+            return
+        log.warning("[%s] No free V2V handshake port; V2V handshake disabled", self.agent_id)
 
     async def send_handshake(
         self,
@@ -354,5 +370,13 @@ class V2VNetwork:
 
 
 def _agent_port_offset(agent_id: str) -> int:
-    """Deterministic port offset from agent ID so each agent has a unique WS port."""
-    return abs(hash(agent_id)) % 1000
+    """Deterministic, collision-light port offset. Prefer a trailing integer in
+    the id (e.g. EVX-137 -> 137) so a numbered fleet gets unique, peer-derivable
+    ports; fall back to a stable CRC for arbitrary ids."""
+    import re
+    import zlib
+
+    match = re.search(r"(\d+)$", agent_id)
+    if match:
+        return int(match.group(1)) % 5000
+    return zlib.crc32(agent_id.encode()) % 5000

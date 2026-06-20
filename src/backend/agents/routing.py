@@ -193,9 +193,18 @@ class V2VDeconfliction:
     OFFSET_M: float = RouteFollower.LATERAL_OFFSET_M
 
     @staticmethod
-    def should_yield(my_metric: float, peer_metric: float) -> bool:
-        """I yield when my constraint metric is strictly lower (I'm less critical)."""
-        return my_metric < peer_metric
+    def should_yield(
+        my_metric: float,
+        peer_metric: float,
+        my_id: str = "",
+        peer_id: str = "",
+    ) -> bool:
+        """I yield when my constraint metric is lower (I'm less critical). On an
+        exact tie a deterministic rule (higher agent_id yields) breaks the
+        symmetry so both sides agree and neither holds into the other."""
+        if my_metric != peer_metric:
+            return my_metric < peer_metric
+        return my_id > peer_id
 
     @staticmethod
     def compute_offset(
@@ -212,12 +221,15 @@ class V2VDeconfliction:
     def negotiate(
         my_state: AgentState,
         peer_metric: float,
+        peer_id: str = "",
     ) -> float:
         """
         Returns the lateral offset this agent should adopt.
         0.0 means hold course.
         """
-        if V2VDeconfliction.should_yield(my_state.priority_metric, peer_metric):
+        if V2VDeconfliction.should_yield(
+            my_state.priority_metric, peer_metric, my_state.agent_id, peer_id
+        ):
             return V2VDeconfliction.compute_offset(my_state.velocity)
         return 0.0
 
