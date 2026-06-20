@@ -1,5 +1,8 @@
-def main():
-    print("Hello from tum-science-hackathon-air2!")
+from src.backend.server.app import run
+
+
+def main() -> None:
+    run()
 
 
 if __name__ == "__main__":

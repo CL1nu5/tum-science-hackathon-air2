@@ -83,8 +83,13 @@ class AgentState:
     assigned_route: list[Waypoint] = field(default_factory=list)
     current_waypoint_idx: int = 0
     corridor_id: str | None = None
+    route_reservation_id: str | None = None
+    route_revision: int = 0
+    departure_time: str | None = None
 
     # Slot
+    slot_reservation_id: str | None = None
+    slot_revision: int = 0
     slot_vertiport: str | None = None
     slot_time: str | None = None    # ISO timestamp of reserved slot
     stand_id: str | None = None

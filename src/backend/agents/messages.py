@@ -114,19 +114,29 @@ class EmergencyDeclaration(BaseMessage):
 class RouteAssignment(BaseMessage):
     type: str = "ROUTE_ASSIGNMENT"
     agent_id: str = ""
+    reservation_id: str = ""
     corridor_id: str = ""
+    destination_vertiport: str = ""
     waypoints: list[list[float]] = field(default_factory=list)  # [[x,y,z,t], ...]
     departure_time: str = field(default_factory=_now_iso)
     eta: str = field(default_factory=_now_iso)
+    lease_expires_at: str = field(default_factory=_now_iso)
+    revision: int = 1
 
 
 @dataclass
 class LockGrant(BaseMessage):
     type: str = "LOCK_GRANT"
     agent_id: str = ""
+    reservation_id: str = ""
     vertiport_id: str = ""
+    start_time: str = ""
+    end_time: str = ""
     slot_time: str = ""
     stand_id: str | None = None
+    lease_expires_at: str = ""
+    stage: str = "TENTATIVE"
+    revision: int = 1
 
 
 @dataclass
@@ -138,6 +148,72 @@ class PreemptNotice(BaseMessage):
     vertiport_id: str = ""
     slot_time: str = ""
     backup_options: list[str] = field(default_factory=list)  # suggested alternatives
+
+
+@dataclass
+class LandingClearance(BaseMessage):
+    type: str = "LANDING_CLEARANCE"
+    agent_id: str = ""
+    reservation_id: str = ""
+    vertiport_id: str = ""
+    stand_id: str | None = None
+    emergency_standby: bool = False
+
+
+@dataclass
+class EmergencyResolution(BaseMessage):
+    type: str = "EMERGENCY_RESOLUTION"
+    agent_id: str = ""
+    outcome: str = "RESOLVED"  # RESOLVED | HUMAN_REQUIRED
+    target_vertiport: str | None = None
+    surface_type: str | None = None
+    preempted_agent_id: str | None = None
+    reason: str = ""
+
+
+@dataclass
+class Heartbeat(BaseMessage):
+    type: str = "HEARTBEAT"
+    agent_id: str = ""
+
+
+@dataclass
+class HeartbeatAck(BaseMessage):
+    type: str = "HEARTBEAT_ACK"
+    agent_id: str = ""
+
+
+@dataclass
+class SyncRequest(BaseMessage):
+    type: str = "SYNC_REQUEST"
+    agent_id: str = ""
+
+
+@dataclass
+class SyncState(BaseMessage):
+    type: str = "SYNC_STATE"
+    agent_id: str = ""
+    route_reservation_id: str | None = None
+    route_revision: int = 0
+    slot_reservation_id: str | None = None
+    slot_revision: int = 0
+    route: list[list[float]] = field(default_factory=list)
+    slot_stage: str = "NONE"
+
+
+@dataclass
+class ProtocolError(BaseMessage):
+    type: str = "PROTOCOL_ERROR"
+    agent_id: str = ""
+    code: str = "INVALID_MESSAGE"
+    message: str = ""
+    retryable: bool = False
+
+
+@dataclass
+class WeatherAdvisory(BaseMessage):
+    type: str = "WEATHER_ADVISORY"
+    cells: list[dict[str, Any]] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -205,6 +281,14 @@ _TYPE_MAP: dict[str, type] = {
     "HANDSHAKE_INIT":       HandshakeInit,
     "HANDSHAKE_ACK":        HandshakeAck,
     "PREEMPT_NOTICE":       PreemptNotice,
+    "LANDING_CLEARANCE":    LandingClearance,
+    "EMERGENCY_RESOLUTION": EmergencyResolution,
+    "HEARTBEAT":            Heartbeat,
+    "HEARTBEAT_ACK":        HeartbeatAck,
+    "SYNC_REQUEST":         SyncRequest,
+    "SYNC_STATE":           SyncState,
+    "PROTOCOL_ERROR":       ProtocolError,
+    "WEATHER_ADVISORY":     WeatherAdvisory,
     "TOWER_DOWN":           TowerDown,
 }
 
