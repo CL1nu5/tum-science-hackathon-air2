@@ -16,6 +16,7 @@
   })();
 </script>
 <script src="./support.js"></script>
+<script src="./simulation.js"></script>
 </head>
 <body>
 <x-dc>
@@ -128,7 +129,7 @@
     <div style="display:flex;align-items:center;gap:8px">
       <div style="width:8px;height:8px;border-radius:50%;background:{{ link.dot }};animation:exPulse 2.4s infinite"></div>
       <div style="display:flex;flex-direction:column;line-height:1.1">
-        <span style="font-size:9px;color:#7e8b99;letter-spacing:.5px">TOWER LINK</span>
+        <span style="font-size:9px;color:#7e8b99;letter-spacing:.5px">SIMULATION</span>
         <span style="font-size:9.5px;color:{{ link.color }};font-family:'IBM Plex Mono',monospace;font-weight:600">{{ link.text }}</span>
       </div>
     </div>
@@ -216,14 +217,14 @@
       </div>
 
       <div style="position:absolute;top:14px;right:16px;text-align:right;pointer-events:none">
-        <div style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:#7e8b99;letter-spacing:1px">LIVE&nbsp;TACTICAL&nbsp;VIEW</div>
-        <div style="font-size:9px;font-family:'IBM Plex Mono',monospace;color:#18926a;letter-spacing:1px;margin-top:3px"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#18926a;animation:exPulse 1.6s infinite;margin-right:5px"></span>{{ metrics.airborne }}&nbsp;TRACKS&nbsp;LIVE</div>
+        <div style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:#7e8b99;letter-spacing:1px">SIMULATED&nbsp;TACTICAL&nbsp;VIEW</div>
+        <div style="font-size:9px;font-family:'IBM Plex Mono',monospace;color:#18926a;letter-spacing:1px;margin-top:3px"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#18926a;animation:exPulse 1.6s infinite;margin-right:5px"></span>{{ metrics.airborne }}&nbsp;TRACKS&nbsp;ACTIVE</div>
       </div>
 
       <div style="position:absolute;bottom:14px;left:16px;background:rgba(255,255,255,.9);border:1px solid #e3e7ec;border-radius:8px;padding:11px 13px;backdrop-filter:blur(6px);box-shadow:0 4px 16px rgba(30,50,80,.06);pointer-events:none">
         <div style="font-size:8.5px;font-family:'IBM Plex Mono',monospace;letter-spacing:1.5px;color:#9aa6b3;margin-bottom:8px">LEGEND</div>
         <div style="display:grid;grid-template-columns:auto auto;gap:6px 18px">
-          <div style="display:flex;align-items:center;gap:7px"><span style="width:14px;height:2px;background:#6557d6;display:inline-block"></span><span style="font-size:9.5px;color:#5a6878">Live route</span></div>
+          <div style="display:flex;align-items:center;gap:7px"><span style="width:14px;height:2px;background:#6557d6;display:inline-block"></span><span style="font-size:9.5px;color:#5a6878">Planned route</span></div>
           <div style="display:flex;align-items:center;gap:7px"><span style="width:8px;height:8px;background:#2f6df0;border-radius:2px;display:inline-block"></span><span style="font-size:9.5px;color:#5a6878">Air-taxi</span></div>
           <div style="display:flex;align-items:center;gap:7px"><span style="width:9px;height:9px;border:1.5px solid #2f6df0;border-radius:2px;display:inline-block"></span><span style="font-size:9.5px;color:#5a6878">Vertiport</span></div>
           <div style="display:flex;align-items:center;gap:7px"><span style="width:14px;height:2px;background:#d6463a;display:inline-block"></span><span style="font-size:9.5px;color:#5a6878">V2V conflict</span></div>
@@ -327,7 +328,7 @@
   </div>
 </div>
 </x-dc>
-<!-- Inline fallback copy of landing-pads.csv so the app works when opened via file:// (where fetch() is blocked). Keep byte-identical to landing-pads.csv. -->
+<!-- Bundled simulation data; keeping it inline also allows the dashboard to open directly from disk. -->
 <script type="text/plain" id="landing-pads-csv">name,short,lat,lon,stands
 Klinikum rechts der Isar,RDI,48.1370,11.5996,2
 Klinikum Großhadern,GRH,48.1108,11.4700,2
@@ -347,7 +348,7 @@ Ostbahnhof,OST,48.1270,11.6048,4
 Siemens Werke,SIE,48.0853,11.6363,4
 Grünwald,GRW,48.0707,11.5267,3
 </script>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;},&quot;simSpeed&quot;:{&quot;editor&quot;:&quot;float&quot;,&quot;default&quot;:1,&quot;min&quot;:0.25,&quot;max&quot;:3,&quot;step&quot;:0.25,&quot;tsType&quot;:&quot;number&quot;},&quot;fleetSize&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:16,&quot;min&quot;:4,&quot;max&quot;:24,&quot;step&quot;:1,&quot;tsType&quot;:&quot;number&quot;},&quot;trackLabels&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;},&quot;simSpeed&quot;:{&quot;editor&quot;:&quot;float&quot;,&quot;default&quot;:1,&quot;min&quot;:0.25,&quot;max&quot;:3,&quot;step&quot;:0.25,&quot;tsType&quot;:&quot;number&quot;},&quot;fleetSize&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:24,&quot;min&quot;:4,&quot;max&quot;:24,&quot;step&quot;:1,&quot;tsType&quot;:&quot;number&quot;},&quot;trackLabels&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
 class Component extends DCLogic {
   constructor(props){
     super(props);
@@ -376,18 +377,11 @@ class Component extends DCLogic {
     this.pointers = new Map();
     this.pinch = null;
     this.suppressClick = false;
-    this.simTime = 0;
-    this.emgTimer = 10;
     this.t = 0;
-    // pad-dependent state starts empty; filled asynchronously in _init() once the CSV loads
+    // Pad-dependent state is initialized once, then advanced by Air2Simulation.
     this.vertiports = []; this.taxis = []; this.sectors = null; this.nav = null;
-    // live (tower) mode — populated from /ws/dashboard + /api/snapshot; falls back
-    // to the self-contained demo sim below when the tower is unreachable.
-    this.liveConnected = false; this.liveTaxis = null; this._vidToIdx = {};
-    this._serverClockOffset = 0; this._liveVertiportsBuilt = false;
-    this.buildWorld();   // map projection, tiles, surfaces, zones, weather, heat (no pads)
-    this._init();        // async: load landing-pads.csv -> build pads/airspace -> taxis -> events (demo fallback)
-    this._connectLive(); // async: connect to the real tower; live data takes over when it arrives
+    this.buildWorld();
+    this._init();
 
     this.refCanvas = (el)=>{ this.canvas = el; if(el) this._setupCanvas(); };
     this.refMap = (el)=>{ this.mapEl = el; };
@@ -422,12 +416,6 @@ class Component extends DCLogic {
     // ground metres per world px at this latitude/zoom (for distance read-outs)
     this.mPerPx = 156543.03 * Math.cos(48.137*Math.PI/180) / Math.pow(2,Z);
 
-    // Shared local projection with the tower (src/backend/server/store.py).
-    // The backend stores positions in metres east/north of this reference; we
-    // invert to lon/lat and reuse LL() so live tracks land on the real basemap.
-    this.lat0=48.137; this.lon0=11.576;
-    this.mPerDegLat=111320; this.mPerDegLon=111320*Math.cos(this.lat0*Math.PI/180);
-
     // tile mosaic
     this.mapCanvas=document.createElement('canvas');
     this.mapCanvas.width=Math.max(1,Math.ceil(this.WORLD_W));
@@ -448,10 +436,6 @@ class Component extends DCLogic {
     //                pad stays reachable while transit traffic is kept out.)
     //   'restrict' — advisory noise / low-altitude caps; drawn but do not block routing.
     const zn=[
-      // --- the canonical hard no-fly: the airport (controlled-access, its own pad reachable) ---
-      ['nofly','NO-FLY · MUC AIRPORT',[          // EDDM airfield perimeter, clamped to the map's north edge
-        [48.3480,11.7475],[48.3530,11.7455],[48.3640,11.7600],[48.3688,11.7830],
-        [48.3660,11.8060],[48.3495,11.8075],[48.3398,11.7945],[48.3392,11.7695],[48.3428,11.7535] ]],
       // --- Olympiapark: major open-air event venue (stadium, concerts), Oberwiesenfeld ---
       ['nofly','NO-FLY · OLYMPIAPARK',[
         [48.1762,11.5448],[48.1755,11.5540],[48.1730,11.5575],[48.1685,11.5570],
@@ -465,9 +449,6 @@ class Component extends DCLogic {
         [48.1022,11.5898],[48.1016,11.5958],[48.0982,11.5965],
         [48.0972,11.5928],[48.0980,11.5885],[48.1008,11.5878] ]],
       // --- advisory / noise-restricted (soft, drawn but do not block routing) ---
-      ['restrict','RESTRICT · ENGLISCHER GARTEN',[ // long Isar-side park, low-altitude noise advisory
-        [48.1438,11.5862],[48.1455,11.5985],[48.1570,11.6005],[48.1690,11.6008],[48.1800,11.6005],
-        [48.1810,11.5950],[48.1730,11.5895],[48.1600,11.5872],[48.1495,11.5865] ]],
       ['restrict','NOISE-CAP · ALTSTADT',[       // old town inside the Altstadtring
         [48.1395,11.5655], // Stachus / Karlsplatz
         [48.1422,11.5690], // Lenbachplatz / Maximiliansplatz
@@ -492,175 +473,32 @@ class Component extends DCLogic {
     this.buildHeat();
   }
 
-  // ---------- LANDING PADS (loaded from landing-pads.csv) ----------
-  async _init(){
-    const pads=await this._loadPads();
-    if(this.liveConnected) return;   // live tower data already took over; skip the demo sim
-    this._buildPads(pads);   // -> this.vertiports + this.sectors + this.nav (airspace)
-    this.initTaxis();
-    this.seedEvents();
-    this.buildHeat();        // re-run now that vertiports exist (adds traffic noise-heat)
+  // ---------- LOCAL SIMULATION ----------
+  _init(){
+    const csv=document.getElementById('landing-pads-csv');
+    this._buildPads(csv ? this._parseCsv(csv.textContent) : []);
+    this.simulation=new Air2Simulation({
+      vertiports:this.vertiports,
+      worldWidth:this.WORLD_W,
+      worldHeight:this.WORLD_H,
+      weather:this.weather,
+      nav:this.nav,
+      fleetSize:this.props.fleetSize??24,
+    });
+    this._syncSimulation();
+    this.buildHeat();
     this.forceUpdate();
     if(this.canvas) this._resize();
   }
 
-  // ---------- LIVE TOWER LINK ----------
-  // Connect to the FastAPI tower: pull /api/snapshot, then keep current via the
-  // /ws/dashboard socket (SNAPSHOT on connect + STATE_CHANGED pings -> refetch).
-  _connectLive(){
-    const httpOrigin = (location.protocol==='http:'||location.protocol==='https:') ? location.origin : 'http://localhost:8000';
-    this._httpBase = httpOrigin;
-    this._wsUrl = httpOrigin.replace(/^http/,'ws') + '/ws/dashboard';
-    this._refreshSnapshot();          // initial fetch (works even if WS is blocked)
-    const open=()=>{
-      let ws; try{ ws=new WebSocket(this._wsUrl); }catch(_){ this._scheduleReconnect(open); return; }
-      this._ws=ws;
-      ws.onmessage=(ev)=>{ try{ const m=JSON.parse(ev.data);
-        if(m.type==='SNAPSHOT'&&m.data) this._ingestSnapshot(m.data);
-        else if(m.type==='STATE_CHANGED') this._scheduleRefresh();
-      }catch(_){} };
-      ws.onclose=()=>{ this.liveConnected=false; this._scheduleReconnect(open); };
-      ws.onerror=()=>{ try{ ws.close(); }catch(_){} };
-    };
-    open();
-  }
-  _scheduleReconnect(open){ if(this._recon) return; this._recon=setTimeout(()=>{ this._recon=null; open(); }, 2000); }
-  _scheduleRefresh(){ if(this._refreshPending) return; this._refreshPending=true;
-    setTimeout(()=>{ this._refreshPending=false; this._refreshSnapshot(); }, 500); }
-  async _refreshSnapshot(){
-    try{ const res=await fetch(this._httpBase+'/api/snapshot',{cache:'no-store'});
-      if(res.ok) this._ingestSnapshot(await res.json());
-    }catch(_){ /* tower offline -> demo sim keeps running */ }
+  _syncSimulation(){
+    this.taxis=this.simulation.taxis;
+    this.events=this.simulation.events;
+    this.activeConflicts=this.simulation.activeConflicts;
+    this.t=this.simulation.time;
   }
 
-  // metres (east/north of the Munich reference) -> world pixels, via lon/lat + LL()
-  _M2W(xm,ym){ return this.LL(this.lon0 + xm/this.mPerDegLon, this.lat0 + ym/this.mPerDegLat); }
-  _serverNow(){ return Date.now()/1000 + (this._serverClockOffset||0); }
-  _hashIdx(str){ let h=0; for(let i=0;i<str.length;i++){ h=(h*31+str.charCodeAt(i))|0; } return Math.abs(h); }
-  _nearestVpIdx(x,y){ let best=0,bd=1e18; (this.vertiports||[]).forEach(v=>{ const d=Math.hypot(v.x-x,v.y-y); if(d<bd){bd=d;best=v.id;} }); return best; }
-
-  _ingestSnapshot(snap){
-    if(!snap) return;
-    if(snap.generated_at){ const sv=Date.parse(snap.generated_at)/1000; if(Number.isFinite(sv)) this._serverClockOffset = sv - Date.now()/1000; }
-
-    // Vertiports come from the tower (built once / when the set changes).
-    const vps = snap.vertiports || [];
-    if(vps.length && (!this._liveVertiportsBuilt || vps.length!==this.vertiports.length)){
-      this.vertiports = vps.map((p,i)=>{ const xy=this._M2W(p.position[0], p.position[1]);
-        return { id:i, vid:p.vertiport_id, name:p.name, short:p.short||p.vertiport_id,
-                 x:xy.x, y:xy.y, stands:(p.stands&&p.stands.length)||0,
-                 surface:p.surface_type, operator:p.operator }; });
-      this._vidToIdx={}; this.vertiports.forEach(v=>{ this._vidToIdx[v.vid]=v.id; });
-      this._buildAirspace(); this.buildHeat();
-      this._liveVertiportsBuilt=true;
-    }
-
-    const routeByAgent={}, slotByAgent={};
-    (snap.routes||[]).forEach(r=>{ routeByAgent[r.agent_id]=r; });
-    (snap.pad_reservations||[]).forEach(s=>{ if(!slotByAgent[s.agent_id]) slotByAgent[s.agent_id]=s; });
-
-    const AIR=new Set(['CLIMBING','EN_ROUTE','DESCENDING','FINAL_APPROACH']);
-    const models=['Volocon V3','Aria S5','Joby J6','Lilium L7','Midnight M2','EHang E8'];
-    const prev={}; (this.liveTaxis||[]).forEach(t=>{ prev[t.callsign]=t; });
-    // stable order (and stable ids) by callsign so selection survives refreshes
-    const list=(snap.aircraft||[]).slice().sort((a,b)=> a.agent_id<b.agent_id?-1:(a.agent_id>b.agent_id?1:0));
-    this.liveTaxis = list.map((a,i)=>{
-      const cs=a.agent_id, old=prev[cs]||{};
-      const airborne=AIR.has(a.flight_stage);
-      const route=routeByAgent[cs], slot=slotByAgent[cs];
-      const wp4d=(route&&route.waypoints) || a.route || [];
-      const route4d=wp4d.filter(p=>p&&p.length>=4).map(p=>{ const xy=this._M2W(p[0],p[1]); return {x:xy.x,y:xy.y,z:p[2],t:p[3]}; });
-      const posXY=this._M2W(a.position[0], a.position[1]);
-      const destIdx=(a.destination_vertiport!=null && this._vidToIdx[a.destination_vertiport]!=null)? this._vidToIdx[a.destination_vertiport] : undefined;
-      const onGroundVp = (!airborne)? this._nearestVpIdx(posXY.x,posXY.y) : undefined;
-      return {
-        id:i, callsign:cs, model: old.model || models[this._hashIdx(cs)%models.length],
-        battery:a.battery_pct, status: a.status==='EMERGENCY'?'emergency':'normal',
-        landed: airborne?0:1,
-        x: airborne&&old.x!=null? old.x : posXY.x,
-        y: airborne&&old.y!=null? old.y : posXY.y,
-        hx: old.hx!=null? old.hx : 1, hy: old.hy!=null? old.hy : 0,
-        spd: old.spd||0, kmh: old.kmh||0, altitude_m: a.altitude_m||0,
-        route4d, route:null, wp:0,
-        goalVp: destIdx, arrivedVp: onGroundVp, originVp:undefined,
-        flightStage:a.flight_stage, slotStage:a.slot_stage,
-        etaUnix: route&&route.eta_at? Date.parse(route.eta_at)/1000 : null,
-        conflict:false, yielding:false, _serverPos:posXY,
-      };
-    });
-    this.taxis = this.liveTaxis;
-    this.events = (snap.events||[]).slice(0,40).map(e=>this._mapEvent(e));
-
-    const cells=(snap.weather||[]).filter(c=>c.active!==false);
-    if(cells.length){ const c=cells[0]; const xy=this._M2W(c.center[0],c.center[1]);
-      this.weather={x:xy.x,y:xy.y,vx:0,vy:0,r:(c.radius_m||1500)/this.mPerPx}; }
-    else { this.weather=null; }
-
-    if(!this.liveConnected){ this.liveConnected=true; if(this.selectedId!=null && this.selectedId>=this.taxis.length) this.selectedId=null; }
-    this.forceUpdate();
-  }
-
-  _mapEvent(e){
-    const sev=e.severity, ty=e.event_type;
-    let color='#6557d6';
-    if(sev==='CRITICAL'||ty==='HUMAN_TAKEOVER_REQUIRED') color='#d6463a';
-    else if(sev==='WARNING'||ty==='SLOT_PREEMPTED'||ty==='EMERGENCY_RESOLVED') color='#d98a16';
-    else if(ty==='LANDING_COMPLETED') color='#18926a';
-    else if(ty==='FLIGHT_PLAN_RESERVED') color='#2f6df0';
-    else if(ty==='AGENT_CONNECTED'||ty==='AGENT_DISCONNECTED'||ty==='WEATHER_UPDATED') color='#5a7fa8';
-    let time='';
-    try{ const d=new Date(e.created_at); const p=n=>String(n).padStart(2,'0');
-      time=p(d.getUTCHours())+':'+p(d.getUTCMinutes())+':'+p(d.getUTCSeconds()); }catch(_){}
-    return { t:time, text:e.message, color, important: sev==='CRITICAL'||sev==='WARNING' };
-  }
-
-  // Move live taxis by interpolating along their real reserved 4D corridor.
-  _tickLive(dt){
-    this.t += dt*(this.props.simSpeed??1);   // keep dashes/pulses animating
-    const now=this._serverNow();
-    const Ts=this.taxis||[];
-    Ts.forEach(t=>{
-      if(t.landed>0){ if(t._serverPos){ t.x=t._serverPos.x; t.y=t._serverPos.y; } return; }
-      const r=t.route4d;
-      if(!r||r.length<2){ if(t._serverPos){ t.x=t._serverPos.x; t.y=t._serverPos.y; } return; }
-      let seg=0, pos;
-      if(now<=r[0].t){ pos={x:r[0].x,y:r[0].y,z:r[0].z}; seg=0; }
-      else if(now>=r[r.length-1].t){ const k=r.length-1; pos={x:r[k].x,y:r[k].y,z:r[k].z}; seg=Math.max(0,k-1); }
-      else { for(let i=0;i<r.length-1;i++){ if(now>=r[i].t && now<=r[i+1].t){ const span=(r[i+1].t-r[i].t)||1, f=(now-r[i].t)/span;
-        pos={x:r[i].x+(r[i+1].x-r[i].x)*f, y:r[i].y+(r[i+1].y-r[i].y)*f, z:r[i].z+(r[i+1].z-r[i].z)*f}; seg=i; break; } } }
-      if(!pos){ const k=r.length-1; pos={x:r[k].x,y:r[k].y,z:r[k].z}; seg=Math.max(0,k-1); }
-      const a=r[seg], b=r[Math.min(seg+1,r.length-1)];
-      let hx=b.x-a.x, hy=b.y-a.y; const m=Math.hypot(hx,hy)||1; hx/=m; hy/=m;
-      t.x=pos.x; t.y=pos.y; if(pos.z!=null) t.altitude_m=pos.z; t.hx=hx; t.hy=hy;
-      t.wp=Math.min(seg+1, r.length-1);
-      t.route = r.map(p=>({x:p.x,y:p.y}));
-      const segDur=(b.t-a.t)||1, pxps=Math.hypot(b.x-a.x,b.y-a.y)/segDur;
-      t.spd=pxps; t.kmh=pxps*this.mPerPx*3.6;
-    });
-    // V2V proximity (visual coupling of nearby tracks)
-    Ts.forEach(t=>{ t.conflict=false; t.yielding=false; });
-    const crit=40, seen={};
-    for(let i=0;i<Ts.length;i++) for(let j=i+1;j<Ts.length;j++){ const a=Ts[i], b=Ts[j]; if(a.landed>0||b.landed>0) continue;
-      if(Math.hypot(a.x-b.x,a.y-b.y)<crit){ a.conflict=true; b.conflict=true; (a.battery>b.battery?a:b).yielding=true;
-        const key=a.id<b.id? a.id+'-'+b.id : b.id+'-'+a.id; seen[key]=true; if(!this.activeConflicts[key]) this.activeConflicts[key]=this.t; } }
-    Object.keys(this.activeConflicts).forEach(k=>{ if(!seen[k]) delete this.activeConflicts[k]; });
-  }
-
-  // Load the CSV from the file when served over http; fall back to the inline
-  // <script id="landing-pads-csv"> copy when opened via file:// (fetch blocked).
-  async _loadPads(){
-    try{
-      const res=await fetch('./landing-pads.csv');
-      if(!res.ok) throw new Error('http '+res.status);
-      return this._parseCsv(await res.text());
-    }catch(_){
-      const el=document.getElementById('landing-pads-csv');
-      return el ? this._parseCsv(el.textContent) : [];
-    }
-  }
-
-  // Naive CSV parser. NOTE: assumes no field contains a comma (current pad names
-  // don't). If a name with a comma is ever added, upgrade to a quoted-field parser.
+  // The bundled pad list has no quoted commas, so a tiny parser is sufficient.
   _parseCsv(text){
     const lines=text.replace(/\r\n?/g,'\n').split('\n').map(l=>l.trim()).filter(l=>l.length);
     if(!lines.length) return [];
@@ -717,71 +555,6 @@ class Component extends DCLogic {
   _polyDist(x,y,pts){ let m=1e9; for(let i=0,j=pts.length-1;i<pts.length;j=i++)
     m=Math.min(m,this._segDist(x,y,pts[j].x,pts[j].y,pts[i].x,pts[i].y)); return m; }
 
-  // ---------- self-routing (A* over the nav grid) ----------
-  // The aircraft computes its own course around no-fly polygons; the result is a
-  // short list of waypoints it then flies between with steering vectors.
-  _routeTo(sx,sy,gx,gy){
-    const nav=this.nav; if(!nav) return [{x:sx,y:sy},{x:gx,y:gy}];
-    const {cols,rows,cell,blocked}=nav, N=cols*rows;
-    const cidx=(x,y)=>{ const cx=Math.max(0,Math.min(cols-1,Math.floor(x/cell)));
-      const cy=Math.max(0,Math.min(rows-1,Math.floor(y/cell))); return cy*cols+cx; };
-    const start=cidx(sx,sy), goal=cidx(gx,gy);
-    if(start===goal) return this._simplify([{x:sx,y:sy},{x:gx,y:gy}]);
-    const gx0=goal%cols, gy0=(goal/cols)|0;
-    const g=new Float64Array(N).fill(Infinity); g[start]=0;
-    const f=new Float64Array(N).fill(Infinity); f[start]=Math.hypot(start%cols-gx0,((start/cols)|0)-gy0);
-    const came=new Int32Array(N).fill(-1);
-    const open=[start], inOpen=new Uint8Array(N); inOpen[start]=1;
-    let found=false;
-    while(open.length){
-      let bi=0; for(let k=1;k<open.length;k++) if(f[open[k]]<f[open[bi]]) bi=k;
-      const cur=open.splice(bi,1)[0]; inOpen[cur]=0;
-      if(cur===goal){ found=true; break; }
-      const cx=cur%cols, cy=(cur/cols)|0;
-      for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){
-        if(!dx&&!dy) continue; const nx=cx+dx, ny=cy+dy;
-        if(nx<0||ny<0||nx>=cols||ny>=rows) continue;
-        const nidx=ny*cols+nx; if(blocked[nidx]) continue;
-        if(dx&&dy && (blocked[cy*cols+nx]||blocked[ny*cols+cx])) continue; // no corner cutting
-        const ng=g[cur]+((dx&&dy)?1.41421:1);
-        if(ng<g[nidx]){ g[nidx]=ng; came[nidx]=cur; f[nidx]=ng+Math.hypot(nx-gx0,ny-gy0);
-          if(!inOpen[nidx]){ open.push(nidx); inOpen[nidx]=1; } }
-      }
-    }
-    if(!found) return this._simplify([{x:sx,y:sy},{x:gx,y:gy}]); // no route -> fly direct
-    const cells=[]; for(let c=goal;c!==-1;c=came[c]) cells.push(c); cells.reverse();
-    const pts=cells.map(idx=>({x:((idx%cols)+0.5)*cell, y:(((idx/cols)|0)+0.5)*cell}));
-    pts[0]={x:sx,y:sy}; pts[pts.length-1]={x:gx,y:gy};
-    return this._simplify(pts);
-  }
-  // string-pulling: collapse the cell path to the fewest waypoints with clear sight-lines
-  _simplify(pts){ if(pts.length<=2) return pts;
-    const out=[pts[0]]; let i=0;
-    while(i<pts.length-1){ let j=pts.length-1;
-      for(; j>i+1; j--){ if(this._lineClear(pts[i].x,pts[i].y,pts[j].x,pts[j].y)) break; }
-      out.push(pts[j]); i=j; }
-    return out; }
-  _lineClear(ax,ay,bx,by){ const nav=this.nav; if(!nav) return true;
-    const {cols,rows,cell,blocked}=nav; const d=Math.hypot(bx-ax,by-ay);
-    const steps=Math.max(1,Math.ceil(d/(cell*0.5)));
-    for(let s=0;s<=steps;s++){ const t=s/steps, x=ax+(bx-ax)*t, y=ay+(by-ay)*t;
-      const cx=Math.floor(x/cell), cy=Math.floor(y/cell);
-      if(cx<0||cy<0||cx>=cols||cy>=rows) continue;
-      if(blocked[cy*cols+cx]) return false; }
-    return true; }
-
-  _assignRoute(t,gx,gy){ t.route=this._routeTo(t.x,t.y,gx,gy); t.wp=Math.min(1,t.route.length-1); }
-  // advance a freshly-routed taxi to a fraction of its route (so the scene starts mid-flight)
-  _seedProgress(t,frac){ const r=t.route; if(!r||r.length<2){ t.wp=0; return; }
-    let total=0; for(let k=1;k<r.length;k++) total+=Math.hypot(r[k].x-r[k-1].x,r[k].y-r[k-1].y);
-    let target=total*Math.max(0,Math.min(0.7,frac)), acc=0;
-    for(let k=1;k<r.length;k++){ const seg=Math.hypot(r[k].x-r[k-1].x,r[k].y-r[k-1].y)||1;
-      if(acc+seg>=target){ const tt=(target-acc)/seg;
-        t.x=r[k-1].x+(r[k].x-r[k-1].x)*tt; t.y=r[k-1].y+(r[k].y-r[k-1].y)*tt;
-        t.hx=(r[k].x-r[k-1].x)/seg; t.hy=(r[k].y-r[k-1].y)/seg; t.wp=k; return; }
-      acc+=seg; }
-    t.x=r[r.length-1].x; t.y=r[r.length-1].y; t.wp=r.length-1; }
-
   _sectorOf(x,y){ const S=this.sectors; if(!S) return null;
     const c=Math.max(0,Math.min(S.cols-1,Math.floor(x/S.w)));
     const r=Math.max(0,Math.min(S.rows-1,Math.floor(y/S.h)));
@@ -803,13 +576,13 @@ class Component extends DCLogic {
     const max=Math.pow(2,this.tileZ);
     if(ty<0||ty>=max) return null;
     const wrappedX=((tx%max)+max)%max;
-    const style=this.isDark?'dark':'light';
+    const style=this.isDark?'dark_all':'rastertiles/voyager';
     const key=style+'/'+this.tileZ+'/'+wrappedX+'/'+ty;
     if(this.tileCache.has(key)) return this.tileCache.get(key);
     const img=new Image(); img.crossOrigin='anonymous';
     const subs=['a','b','c']; const s=subs[Math.abs(wrappedX+ty)%subs.length];
     const tilePath=this.tileZ+'/'+wrappedX+'/'+ty;
-    img.src='https://'+s+'.basemaps.cartocdn.com/'+style+'_all/'+tilePath+'.png';
+    img.src='https://'+s+'.basemaps.cartocdn.com/'+style+'/'+tilePath+'.png';
     this.tileCache.set(key,img);
     return img;
   }
@@ -826,188 +599,22 @@ class Component extends DCLogic {
     this.buildHeatCanvas=cv; this.heatCanvas=cv;
   }
 
-  initTaxis(){
-    if(!this.vertiports.length) return;   // pads not loaded yet
-    const models=['Volocon V3','Aria S5','Joby J6','Lilium L7','Midnight M2','EHang E8'];
-    const sampleFleet=[
-      {callsign:'EVX-101',model:'Volocon V3', spd:21,battery:92},
-      {callsign:'EVX-102',model:'Aria S5',    spd:19,battery:76},
-      {callsign:'EVX-103',model:'Joby J6',    spd:23,battery:61},
-      {callsign:'EVX-104',model:'Lilium L7',  spd:20,battery:44},
-      {callsign:'EVX-105',model:'Midnight M2',spd:18,battery:17,status:'emergency',emgTimer:14},
-      {callsign:'EVX-106',model:'EHang E8',   spd:22,battery:68},
-      {callsign:'EVX-107',model:'Volocon V3', spd:17,battery:39},
-      {callsign:'EVX-108',model:'Aria S5',    spd:24,battery:83},
-      {callsign:'EVX-109',model:'Joby J6',    spd:20,battery:55},
-      {callsign:'EVX-110',model:'Lilium L7',  spd:21,battery:71},
-      {callsign:'EVX-111',model:'Midnight M2',spd:19,battery:33},
-      {callsign:'EVX-112',model:'EHang E8',   spd:23,battery:88},
-      {callsign:'EVX-113',model:'Volocon V3', spd:18,battery:47},
-      {callsign:'EVX-114',model:'Aria S5',    spd:22,battery:64},
-      {callsign:'EVX-115',model:'Joby J6',    spd:20,battery:29},
-      {callsign:'EVX-116',model:'Lilium L7',  spd:21,battery:96,landed:4.5,arrivedVp:1},
-    ];
-    const vpN=this.vertiports.length;
-    const n=Math.max(4,Math.min(24, this.props.fleetSize??16)); this._fleetN=this.props.fleetSize??16; this.taxis=[];
-    for(let i=0;i<n;i++){
-      const sample=sampleFleet[i]||{
-        callsign:'EVX-'+(101+i), model:models[i%models.length],
-        spd:17+(i*3)%8, battery:46+(i*11)%49
-      };
-      const t={
-        id:i, callsign:sample.callsign, model:sample.model, spd:sample.spd,
-        battery:sample.battery, status:sample.status||'normal',
-        landed:sample.landed||0, emgTimer:sample.emgTimer||0,
-        conflict:false, yielding:false, hx:1, hy:0, x:0, y:0,
-        route:null, wp:0, goalVp:undefined, originVp:undefined, arrivedVp:undefined
-      };
-      if(t.landed>0){                                   // start parked on a pad
-        const vp=sample.arrivedVp!=null? sample.arrivedVp%vpN : i%vpN;
-        t.arrivedVp=vp; const v=this.vertiports[vp]; t.x=v.x; t.y=v.y;
-      } else {                                          // start airborne mid-route
-        const from=i%vpN; let g=(i*5+3)%vpN; if(g===from) g=(g+1)%vpN;
-        const ov=this.vertiports[from]; t.x=ov.x; t.y=ov.y; t.originVp=from; t.goalVp=g;
-        const gv=this.vertiports[g]; this._assignRoute(t, gv.x, gv.y);
-        this._seedProgress(t, 0.12 + (i%5)*0.14);
-      }
-      this.taxis.push(t);
+  componentDidUpdate(){
+    const fleetSize=this.props.fleetSize??24;
+    if(this.simulation && this.simulation.fleetSize!==fleetSize){
+      this.simulation.resetFleet(fleetSize);
+      this.selectedId=null;
+      this._syncSimulation();
     }
   }
-
-  seedEvents(){
-    const seeds=[
-      ['14:22:00','⚠ EMERGENCY · EVX-105 low energy 17% · priority route to Klinikum Harlaching','#d6463a',true],
-      ['14:21:44','on pad · EVX-116 landed Klinikum Großhadern · stand 2 assigned','#18926a'],
-      ['14:21:31','self-routed · EVX-104 → Messestadt Ost via sector D4','#2f6df0'],
-      ['14:21:18','slot leased · Allianz Arena T-03:48','#6557d6'],
-      ['14:21:06','V2V handshake · EVX-107 ⇄ EVX-110','#2f6df0'],
-      ['14:20:52','noise spread · sector C3 rebalanced','#d98a16'],
-      ['14:20:39','weather advisory · north-east cell drifting 13 m/s','#5a7fa8'],
-    ];
-    seeds.forEach(s=> this.events.push({t:s[0], text:s[1], color:s[2], important:s[3]}));
-  }
-
-  // Vector steering: each heli seeks its next self-computed waypoint, blends in
-  // separation from neighbours and repulsion from no-fly polygons, then turns at
-  // a limited rate toward that heading — so corners come out smooth and curvy.
-  _steer(t,dt){
-    const r=t.route;
-    if(!r || t.wp>=r.length){ this._arrive(t); return; }
-    let tgt=r[t.wp];
-    let dx=tgt.x-t.x, dy=tgt.y-t.y, dist=Math.hypot(dx,dy);
-    const isLast=(t.wp===r.length-1);
-    const arriveR=isLast?20:30;
-    if(dist<arriveR){
-      if(isLast){ this._arrive(t); return; }
-      t.wp++; tgt=r[t.wp]; dx=tgt.x-t.x; dy=tgt.y-t.y; dist=Math.hypot(dx,dy)||1;
-    }
-    let desx=dx/(dist||1), desy=dy/(dist||1);
-    // separation from other airborne taxis
-    let sx=0,sy=0;
-    for(const o of this.taxis){ if(o===t||o.landed>0) continue;
-      const ox=t.x-o.x, oy=t.y-o.y, od=Math.hypot(ox,oy);
-      if(od>0.001 && od<50){ const w=(50-od)/50; sx+=ox/od*w; sy+=oy/od*w; } }
-    // repulsion away from no-fly polygons (safety net; routing already avoids them)
-    let rx=0,ry=0;
-    const gv = (t.goalVp!=null)? this.vertiports[t.goalVp] : null;   // its cleared destination pad
-    for(const z of (this.zones||[])){ if(z.kind!=='nofly') continue;
-      if(gv && this._pointInPoly(gv.x,gv.y,z.pts)) continue;          // don't repel from the destination's own zone (cleared to land)
-      const inside=this._pointInPoly(t.x,t.y,z.pts);
-      const pd=inside?0:this._polyDist(t.x,t.y,z.pts), reach=42;
-      if(inside || pd<reach){ const ox=t.x-z.x, oy=t.y-z.y, om=Math.hypot(ox,oy)||1;
-        const w=inside?1.6:(reach-pd)/reach; rx+=ox/om*w; ry+=oy/om*w; } }
-    desx+=sx*0.8+rx*1.6; desy+=sy*0.8+ry*1.6;
-    const dm=Math.hypot(desx,desy)||1; desx/=dm; desy/=dm;
-    const cur=Math.atan2(t.hy,t.hx); const des=Math.atan2(desy,desx);
-    let da=des-cur; while(da>Math.PI)da-=2*Math.PI; while(da<-Math.PI)da+=2*Math.PI;
-    const maxTurn=1.8*dt; if(da>maxTurn)da=maxTurn; else if(da<-maxTurn)da=-maxTurn;
-    const na=cur+da; t.hx=Math.cos(na); t.hy=Math.sin(na);
-    const v=t.spd*(t.yielding?0.66:1);
-    t.x+=t.hx*v*dt; t.y+=t.hy*v*dt;
-  }
-
-  componentDidUpdate(){ if(this.liveConnected) return;   // fleet size is the tower's concern in live mode
-    const fs=this.props.fleetSize??16;
-    if(this._fleetN!==fs){ this._fleetN=fs; this.initTaxis(); this.selectedId=null; } }
 
   tick(dt){
-    if(this.liveConnected){ this._tickLive(dt); return; }   // real tower data drives motion
-    dt *= (this.props.simSpeed??1);
-    this.t+=dt; this.simTime+=dt;
-    const Ts=this.taxis;
-    Ts.forEach(t=>{
-      if(t.landed>0){ t.landed-=dt; t.battery=Math.min(100,t.battery+dt*5);
-        if(t.landed<=0) this._depart(t); return; }
-      this._steer(t,dt);
-      t.battery -= dt*(0.20 + (t.status==='emergency'?0.5:0));
-      if(t.battery<0) t.battery=0;
-      t.x=Math.max(0,Math.min(this.WORLD_W,t.x)); t.y=Math.max(0,Math.min(this.WORLD_H,t.y));
-    });
-    Ts.forEach(t=>{ t.conflict=false; t.yielding=false; });
-    const crit=46; const seen={}; this._pairLog=this._pairLog||{};
-    for(let i=0;i<Ts.length;i++) for(let j=i+1;j<Ts.length;j++){
-      const a=Ts[i], b=Ts[j]; if(a.landed>0||b.landed>0) continue;
-      const d=Math.hypot(a.x-b.x,a.y-b.y);
-      if(d<crit){
-        a.conflict=true; b.conflict=true;
-        const yielder = a.battery>b.battery? a : b;
-        yielder.yielding=true;
-        const key=a.id<b.id? a.id+'-'+b.id : b.id+'-'+a.id; seen[key]=true;
-        if(!this.activeConflicts[key]){ this.activeConflicts[key]=this.t;
-          const last=this._pairLog[key]||-999;
-          if(this.t-last>20){ this._pairLog[key]=this.t;
-            this._log('V2V deconfliction · '+a.callsign+' ⇄ '+b.callsign+' · '+yielder.callsign+' yields & re-vectors', '#d98a16'); }
-        }
-      }
-    }
-    Object.keys(this.activeConflicts).forEach(k=>{ if(!seen[k]) delete this.activeConflicts[k]; });
-
-    this.emgTimer-=dt;
-    if(this.emgTimer<=0){ this.emgTimer=16+Math.random()*12;
-      const cand=this.taxis.filter(t=>t.status==='normal'&&t.landed<=0);
-      if(cand.length){ const t=cand[Math.floor(Math.random()*cand.length)];
-        t.status='emergency'; t.battery=Math.min(t.battery,11+Math.random()*8); t.emgTimer=11+Math.random()*6;
-        const vp=this._nearestVp(t); t.goalVp=vp.id; t.arrivedVp=undefined; this._assignRoute(t, vp.x, vp.y);
-        this._log('⚠ EMERGENCY · '+t.callsign+' low energy '+Math.round(t.battery)+'% · self-routing to '+vp.name,'#d6463a',true);
-      }
-    }
-    this.taxis.forEach(t=>{ if(t.status==='emergency'){ t.emgTimer-=dt;
-      if(t.emgTimer<=0){ t.status='normal'; t.battery=42+Math.random()*15;
-        this._log('resolved · '+t.callsign+' secured slot, reserve restored','#18926a'); } } });
-
-    const w=this.weather; w.x+=w.vx*dt; w.y+=w.vy*dt;
-    if(w.x>this.WORLD_W-100||w.x<100){ w.vx*=-1; this._log('weather cell drift · sector advisories updated','#5a7fa8'); }
-    if(w.y>this.WORLD_H-100||w.y<100) w.vy*=-1;
+    if(!this.simulation) return;
+    this.simulation.step(dt*(this.props.simSpeed??1));
+    this._syncSimulation();
   }
 
-  _arrive(t){ const vp = (t.goalVp!=null)? t.goalVp : this._nearestVp(t).id;
-    t.landed=2.4+Math.random()*3.2; t.arrivedVp=vp; t.route=null; t.wp=0;
-    const v=this.vertiports[vp]; if(v){ t.x=v.x; t.y=v.y; }
-    if(Math.random()<0.5 && v) this._log('on pad · '+t.callsign+' landed '+v.name+' · stand assigned','#18926a'); }
-
-  // pick a fresh destination and let the aircraft compute its own course there
-  _depart(t){ const from = (t.arrivedVp!=null)? t.arrivedVp : this._nearestVp(t).id;
-    const v=this.vertiports[from]; if(v){ t.x=v.x; t.y=v.y; }
-    const N=this.vertiports.length; let g=from;
-    if(N>1){ let guard=0; do{ g=Math.floor(Math.random()*N); }while(g===from && ++guard<8); }
-    t.originVp=from; t.goalVp=g; t.arrivedVp=undefined; if(t.status==='emergency') t.status='normal';
-    const gv=this.vertiports[g]; this._assignRoute(t, gv.x, gv.y);
-    const nx=(t.route&&t.route.length>1)? t.route[1] : gv;
-    const hx=nx.x-t.x, hy=nx.y-t.y, m=Math.hypot(hx,hy)||1; t.hx=hx/m; t.hy=hy/m; }
-
-  _nearestVp(t){ let best=this.vertiports[0], bd=1e9;
-    this.vertiports.forEach(v=>{ const d=Math.hypot(v.x-t.x,v.y-t.y); if(d<bd){bd=d;best=v;} }); return best; }
-
-  _log(text,color,important){ this.events.unshift({t:this._clock(), text, color, important});
-    if(this.events.length>40) this.events.length=40; }
-
-  _clock(){
-    if(this.liveConnected){ const d=new Date(); const p=n=>String(n).padStart(2,'0');
-      return p(d.getUTCHours())+':'+p(d.getUTCMinutes())+':'+p(d.getUTCSeconds()); }
-    const base=14*3600+22*60; const s=Math.floor(base+this.simTime);
-    const hh=String(Math.floor(s/3600)%24).padStart(2,'0');
-    const mm=String(Math.floor(s/60)%60).padStart(2,'0');
-    const ss=String(s%60).padStart(2,'0'); return hh+':'+mm+':'+ss; }
+  _clock(){ return this.simulation ? this.simulation.clock() : '14:22:00'; }
 
   _setupCanvas(){ if(this._ready) return; this._ready=true;
     this.ctx=this.canvas.getContext('2d');
@@ -1073,13 +680,17 @@ class Component extends DCLogic {
     requestAnimationFrame(()=>this._resize());
     const target=this.mapEl||this.canvas.parentElement;
     if(target && window.ResizeObserver){ this._ro=new ResizeObserver(()=>this._resize()); this._ro.observe(target); }
-    let last=performance.now();
-    const loop=(now)=>{ const dt=Math.min(0.05,(now-last)/1000); last=now; this.tick(dt); this.draw(); this._raf=requestAnimationFrame(loop); };
+    let last=performance.now(), lastUi=last;
+    const loop=(now)=>{
+      const dt=Math.min(0.05,(now-last)/1000); last=now;
+      this.tick(dt);
+      this.draw();
+      if(now-lastUi>=250){ lastUi=now; this.forceUpdate(); }
+      this._raf=requestAnimationFrame(loop);
+    };
     this._raf=requestAnimationFrame(loop);
-    this._dom=setInterval(()=>this.forceUpdate(),250);
   }
-  componentWillUnmount(){ if(this._raf) cancelAnimationFrame(this._raf); if(this._dom) clearInterval(this._dom); if(this._ro) this._ro.disconnect();
-    if(this._ws){ try{ this._ws.close(); }catch(_){} } if(this._recon) clearTimeout(this._recon);
+  componentWillUnmount(){ if(this._raf) cancelAnimationFrame(this._raf); if(this._ro) this._ro.disconnect();
     if(this.canvas){ this.canvas.removeEventListener('pointerdown',this._pointerDown); this.canvas.removeEventListener('pointermove',this._pointerMove);
       this.canvas.removeEventListener('pointerup',this._pointerUp); this.canvas.removeEventListener('pointercancel',this._pointerUp);
       this.canvas.removeEventListener('wheel',this._wheel); } }
@@ -1148,6 +759,7 @@ class Component extends DCLogic {
     const tyMin=Math.floor((this.tileGy0+worldTop)/256)-1;
     const tyMax=Math.floor((this.tileGy0+worldBottom)/256)+1;
     ctx.save(); ctx.globalAlpha=1;
+    ctx.filter=this.isDark?'contrast(1.22) saturate(1.28) brightness(1.12)':'contrast(1.18) saturate(1.22) brightness(0.98)';
     for(let tx=txMin;tx<=txMax;tx++) for(let ty=tyMin;ty<=tyMax;ty++){
       const img=this._getTile(tx,ty); if(!img) continue;
       const p=this.W2S(tx*256-this.tileGx0,ty*256-this.tileGy0);
@@ -1159,8 +771,6 @@ class Component extends DCLogic {
       }
     }
     ctx.restore();
-    // soft veil so data layers read clearly over the basemap
-    ctx.save(); ctx.fillStyle=this.isDark?'rgba(5,10,16,0.22)':'rgba(246,248,251,0.18)'; ctx.fillRect(0,0,v.cw,v.ch); ctx.restore();
   }
 
   _drawHeat(ctx){ const tl=this.W2S(0,0), br=this.W2S(this.WORLD_W,this.WORLD_H);
@@ -1169,7 +779,15 @@ class Component extends DCLogic {
 
   _drawZones(ctx){ const C=this.C;
     this.zones.forEach(z=>{
-      const sp=z.pts.map(p=>this.W2S(p.x,p.y));
+      const displayScale=
+        z.label==='NO-FLY · THERESIENWIESE'?2.00:
+        z.label==='NO-FLY · OLYMPIAPARK'?1.50:
+        z.kind==='nofly'?1.30:1;
+      const displayOffsetY=z.label==='NO-FLY · THERESIENWIESE'?125/this.mPerPx:0;
+      const sp=z.pts.map(p=>this.W2S(
+        z.x+(p.x-z.x)*displayScale,
+        z.y+(p.y-z.y)*displayScale+displayOffsetY
+      ));
       const col = z.kind==='nofly'? C.red : C.amber;
       const trace=()=>{ ctx.beginPath(); sp.forEach((p,i)=> i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.closePath(); };
       let minx=1e9,miny=1e9,maxx=-1e9,maxy=-1e9;
@@ -1178,13 +796,18 @@ class Component extends DCLogic {
       ctx.save();
       // hatched fill, clipped to the polygon
       trace(); ctx.clip();
-      ctx.fillStyle = z.kind==='nofly'?'rgba(214,70,58,0.07)':'rgba(217,138,22,0.06)'; ctx.fillRect(minx,miny,w,h);
-      ctx.strokeStyle = z.kind==='nofly'?'rgba(214,70,58,0.16)':'rgba(217,138,22,0.15)'; ctx.lineWidth=1;
+      ctx.fillStyle = z.kind==='nofly'?'rgba(220,45,38,0.14)':'rgba(217,138,22,0.06)'; ctx.fillRect(minx,miny,w,h);
+      ctx.strokeStyle = z.kind==='nofly'?'rgba(225,45,38,0.30)':'rgba(217,138,22,0.15)'; ctx.lineWidth=z.kind==='nofly'?1.4:1;
       for(let o=-h;o<w+h;o+=7){ ctx.beginPath(); ctx.moveTo(minx+o,miny); ctx.lineTo(minx+o-h,maxy); ctx.stroke(); }
       ctx.restore();
       // street-aligned dashed outline
       ctx.save(); trace();
-      ctx.strokeStyle=col; ctx.globalAlpha=0.62; ctx.lineWidth=1.3; ctx.lineJoin='round'; ctx.setLineDash([5,5]); ctx.stroke();
+      ctx.strokeStyle=z.kind==='nofly'?'#df3c34':col;
+      ctx.globalAlpha=z.kind==='nofly'?0.82:0.62;
+      ctx.lineWidth=z.kind==='nofly'?2.2:1.3;
+      ctx.lineJoin='round';
+      if(z.kind==='nofly'){ ctx.shadowColor='rgba(223,60,52,0.48)'; ctx.shadowBlur=7; }
+      ctx.setLineDash([5,5]); ctx.stroke();
       ctx.setLineDash([]); ctx.globalAlpha=1;
       // label above the polygon's top edge
       ctx.fillStyle=col; ctx.font='600 9px IBM Plex Mono'; ctx.textAlign='center';
@@ -1419,17 +1042,9 @@ class Component extends DCLogic {
       const em=sTaxi.status==='emergency';
       const bcol = sTaxi.battery<22?'#d6463a': sTaxi.battery<45?'#d98a16':'#18926a';
       const etaS=Math.max(0,Math.round(this._etaTo(sTaxi)));
-      let stage;
-      if(this.liveConnected){
-        const map={NONE:'tentative',TENTATIVE:'tentative',FIRM_FAR:'firm·far',FIRM_NEAR:'firm·near',FINAL_APPROACH:'final approach',ON_PAD:'on pad',PARKED:'parked'};
-        stage=map[sTaxi.slotStage||'NONE']||(sTaxi.slotStage||'tentative').toLowerCase();
-      } else {
-        stage = sTaxi.landed>0?'on pad': etaS<24?'final approach': etaS<60?'firm·near': etaS<130?'firm·far':'tentative';
-      }
+      const stage = sTaxi.landed>0?'on pad': etaS<24?'final approach': etaS<60?'firm·near': etaS<130?'firm·far':'tentative';
       const stageColor = (stage==='on pad'||stage==='parked')?'#18926a': stage==='final approach'?'#d98a16': stage==='firm·near'?'#2f6df0':'#6557d6';
-      const liveEta = (em)? 'PRIORITY' : (this.liveConnected && sTaxi.etaUnix
-        ? (()=>{ const l=Math.max(0,Math.round(sTaxi.etaUnix-this._serverNow())); return Math.floor(l/60)+':'+String(l%60).padStart(2,'0'); })()
-        : (Math.floor(etaS/60)+':'+String(etaS%60).padStart(2,'0')));
+      const eta = em ? 'PRIORITY' : Math.floor(etaS/60)+':'+String(etaS%60).padStart(2,'0');
       const dv=this.vertiports[this._destVp(sTaxi)]||{name:'—'};
       const opts=this.vertiports.map(v=>{ const d=this._km(Math.hypot(v.x-sTaxi.x,v.y-sTaxi.y));
         const range=sTaxi.battery/100*16; const reach=d*1.15<range;
@@ -1449,14 +1064,14 @@ class Component extends DCLogic {
         statusLabel: em?'EMERGENCY':'NORMAL', statusColor: em?'#d6463a':'#2f6df0',
         statusBg: em?'#fdf1f0':'#eef4ff', headBg: em?'#fdf4f3':'#f5f8fe',
         batteryPct:Math.round(sTaxi.battery), batteryColor:bcol,
-        speed: this.liveConnected? Math.round(sTaxi.kmh||0) : Math.round(sTaxi.spd*7.0),
-        altitude: this.liveConnected? Math.round(sTaxi.altitude_m||0) : 180+ (sTaxi.id%5)*45,
+        speed:Math.round(sTaxi.spd*7.0),
+        altitude:Math.round(sTaxi.altitude_m),
         sectorLabel:(this._sectorOf(sTaxi.x,sTaxi.y)||{}).label||'—', destName:dv.name,
-        etaStr: liveEta,
+        etaStr:eta,
         slotStage:stage, stageColor, reachCount,
         constraintPct:ci, constraintColor:ccol,
         constraintLabel: ci>66?'HIGH · acts first': ci>40?'MODERATE':'LOW',
-        constraintNote: em? 'Emergency gate OPEN · may preempt a lower-priority slot if own options exhausted and victim keeps ≥1 reachable option.' : 'Normal status · holds tower-assigned route, may not preempt. Re-routes locally only inside critical radius.'
+        constraintNote: em? 'Emergency priority is active. The simulation routes this aircraft to its nearest reachable landing site.' : 'Normal operation. Route progress, separation, battery use, and landing cycles are handled locally.'
       };
     }
 
@@ -1470,9 +1085,7 @@ class Component extends DCLogic {
     const events=(this.events||[]).slice(0,18).map(e=>({ time:e.t, color:e.color,
       text:e.text, textColor: e.important?'#b23a2f': '#54616f' }));
 
-    const link = this.liveConnected
-      ? { text:'ONLINE · LIVE', color:'#18926a', dot:'#18926a' }
-      : { text:'DEMO · OFFLINE', color:'#d98a16', dot:'#d98a16' };
+    const link={ text:'LOCAL · RUNNING', color:'#18926a', dot:'#18926a' };
 
     return {
       link,
