@@ -818,9 +818,9 @@ class Component extends DCLogic {
     const blob=(cx,cy,r,col,a)=>{ const g=x.createRadialGradient(cx,cy,0,cx,cy,r);
       g.addColorStop(0,col.replace('A',a)); g.addColorStop(1,col.replace('A','0'));
       x.fillStyle=g; x.beginPath(); x.arc(cx,cy,r,0,7); x.fill(); };
-    (this.vertiports||[]).forEach(v=>{ blob(v.x,v.y,76,'rgba(225,120,20,A)',0.05); });
+    (this.vertiports||[]).forEach(v=>{ blob(v.x,v.y,76,'rgba(225,120,20,A)',0.09); });
     this.residential.forEach((p,i)=>{ const hot=i%3===0;
-      blob(p.x,p.y, hot?120:88, hot?'rgba(214,70,40,A)':'rgba(225,140,25,A)', hot?0.13:0.08); });
+      blob(p.x,p.y, hot?120:88, hot?'rgba(214,70,40,A)':'rgba(225,140,25,A)', hot?0.20:0.13); });
     this.buildHeatCanvas=cv; this.heatCanvas=cv;
   }
 
@@ -1162,7 +1162,7 @@ class Component extends DCLogic {
   }
 
   _drawHeat(ctx){ const tl=this.W2S(0,0), br=this.W2S(this.WORLD_W,this.WORLD_H);
-    ctx.save(); const pulse=0.92+0.08*Math.sin(this.t*1.3); ctx.globalAlpha=0.62*pulse;
+    ctx.save(); const pulse=0.92+0.08*Math.sin(this.t*1.3); ctx.globalAlpha=0.8*pulse;
     try{ ctx.drawImage(this.heatCanvas, tl.x, tl.y, br.x-tl.x, br.y-tl.y); }catch(e){} ctx.restore(); }
 
   _drawZones(ctx){ const C=this.C;
