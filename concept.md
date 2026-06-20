@@ -1,20 +1,3 @@
-
-Unterhaltung mit Gemini
-create an md out of this document
-
-Your Markdown (MD) file is ready.
-MD-Symbol
-electric_air_taxi_system
- MD 
-Geöffnet
-
-I have extracted the text from the provided document and formatted it cleanly using standard Markdown formatting (headers, bullet points, and bold emphasis) so it's ready for immediate use. Let me know if you need any adjustments to the layout!
-
-
-
-
-Gemini ist eine KI und kann Fehler machen, auch bei Informationen über Personen. Datenschutz und GeminiWird in einem neuen Fenster geöffnet
-
 # Electric Air-Taxi System - Consolidated Concept
 
 **Goal:** Resolve conflicts before take-off through perfect tower planning, and resolve the unavoidable rest locally and autonomously between affected objects - keeping noise low, emergency landing sites in reach, and flight safe, stable, and predictable.
