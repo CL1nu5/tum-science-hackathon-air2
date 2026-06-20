@@ -1,0 +1,3 @@
+# AirNetBus: Multi-Agent AI for Autonomous eVTOL Routing and control view by Airbus
+
+*The Challenge:* As Airbus pioneers CityAerospace (eVTOLs/flying taxis), managing a crowded urban airspace is a massive logistical hurdle. Students will design a decentralized, multi-agent coordination system for a fleet of autonomous eVTOLs in a simulated Munich (or other city) airspace. The system must give a centralized view and control of the agents/assets/aircrafts and optimize for battery life, noise constraints over residential areas, weather shifts, and emergency landing priorities.
