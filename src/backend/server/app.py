@@ -570,6 +570,35 @@ async def _cleanup_loop() -> None:
                     aircraft["connected"] = False
                     aircraft["revision"] += 1
                     changed = True
+                    # A vanished taxi must not keep holding a stand or a corridor.
+                    agent_id = aircraft["agent_id"]
+                    slot_scheduler.release_departure_stand_locked(agent_id)
+                    for route in store.state["routes"].values():
+                        if route["agent_id"] == agent_id and route.get("active", True):
+                            route["active"] = False
+                            route["revision"] += 1
+                    for slot in store.state["pad_reservations"].values():
+                        if (
+                            slot["agent_id"] == agent_id
+                            and slot.get("active", True)
+                            and slot["stage"] not in HARD_LOCK_STAGES
+                        ):
+                            slot["active"] = False
+                            slot["revision"] += 1
+
+            # Prune deactivated routes/slots so the persisted state file does not
+            # grow without bound (it had ballooned to ~500 KB of dead reservations).
+            for bucket in ("routes", "pad_reservations"):
+                dead = [
+                    key
+                    for key, item in store.state[bucket].items()
+                    if not item.get("active", True)
+                ]
+                if dead:
+                    for key in dead:
+                        del store.state[bucket][key]
+                    changed = True
+
             if changed:
                 store.persist_locked()
         if changed:

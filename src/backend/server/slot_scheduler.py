@@ -140,6 +140,14 @@ class PadSlotScheduler:
         return reservation
 
     def assign_stand_locked(self, agent_id: str, vertiport_id: str) -> dict | None:
+        # Idempotent: a retried LockRequest (the inbound taxi polls while holding)
+        # must not hand the same taxi a *second* stand. Return the one it holds.
+        for stand in self.store.state["stands"].values():
+            if (
+                stand["vertiport_id"] == vertiport_id
+                and stand["occupied_by"] == agent_id
+            ):
+                return stand
         for stand in self.store.state["stands"].values():
             if (
                 stand["vertiport_id"] == vertiport_id

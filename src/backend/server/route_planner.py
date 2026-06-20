@@ -55,7 +55,33 @@ class RoutePlanner:
             self.store.persist_locked()
             return plan
 
-    def reserve_flight_plan_locked(self, request: RouteRequest) -> FlightPlan:
+    def _landing_capacity_locked(
+        self, vertiport_id: str, exclude_agent_id: str
+    ) -> int:
+        """Projected free stands at a vertiport = free stands now minus the taxis
+        already inbound to it. Implements the concept's guiding principle: a taxi
+        only launches when it has >=1 reachable free place to land (concept §3/§4).
+        Holding at the pad covers the residual races."""
+        free_stands = sum(
+            1
+            for stand in self.store.state["stands"].values()
+            if stand["vertiport_id"] == vertiport_id
+            and stand["active"]
+            and stand["occupied_by"] is None
+        )
+        inbound = sum(
+            1
+            for ac in self.store.state["aircraft"].values()
+            if ac["agent_id"] != exclude_agent_id
+            and ac.get("destination_vertiport") == vertiport_id
+            and ac.get("flight_stage")
+            not in ("PARKED", "ON_PAD", "PRE_FLIGHT")
+        )
+        return free_stands - inbound
+
+    def reserve_flight_plan_locked(
+        self, request: RouteRequest, *, enforce_capacity: bool = True
+    ) -> FlightPlan:
         started = time.monotonic()
         aircraft = self.store.state["aircraft"].setdefault(
             request.agent_id,
@@ -92,10 +118,32 @@ class RoutePlanner:
         if not destination["pad_available"]:
             raise RoutePlanningError(f"Destination {request.destination_vertiport} failed")
 
+        # Stand-before-takeoff: do not launch toward a vertiport that has no free
+        # place to land once everyone already inbound is accounted for. The taxi
+        # stays parked and the dispatch loop retries (another pad, or later).
+        if (
+            enforce_capacity
+            and destination["surface_type"] == "vertiport"
+            and self._landing_capacity_locked(
+                destination["vertiport_id"], request.agent_id
+            )
+            < 1
+        ):
+            raise RoutePlanningError(
+                f"Destination {request.destination_vertiport} has no free stand to land into"
+            )
+
         self.slots.release_departure_stand_locked(request.agent_id)
         departure = max(
             parse_timestamp(request.departure_time),
             datetime.now(timezone.utc) + timedelta(seconds=2),
+        )
+        # An already-airborne taxi (emergency reroute / divert) cannot ground-hold:
+        # its corridor must start NOW, so we never delay its departure. Delaying it
+        # would freeze it mid-air (the follower clamps to an un-started corridor)
+        # and drain a low battery — exactly the failure we must avoid.
+        airborne = aircraft.get("flight_stage") in (
+            "CLIMBING", "EN_ROUTE", "DESCENDING", "FINAL_APPROACH",
         )
         infrastructure = list(self.store.state["vertiports"].values())
         existing_routes = [
@@ -121,7 +169,9 @@ class RoutePlanner:
 
         is_vertiport = destination["surface_type"] == "vertiport"
         feasible: list[tuple[float, list, datetime]] = []
-        for candidate in self._candidate_routes(request, destination, departure):
+        for candidate in self._candidate_routes(
+            request, destination, departure, airborne=airborne
+        ):
             if time.monotonic() - started > self.settings.route_planning_timeout_s:
                 break  # honour the hard timeout; pick the best found so far
             if not self._route_has_emergency_coverage(
@@ -152,6 +202,9 @@ class RoutePlanner:
                     exclude_agent_id=request.agent_id,
                 ):
                     continue
+            # Prefer the earliest workable departure so taxis don't ground-hold
+            # longer than deconfliction actually requires.
+            delay_s = candidate[0][3] - departure.timestamp()
             feasible.append(
                 (
                     self._score(
@@ -160,7 +213,8 @@ class RoutePlanner:
                         noise_zones,
                         existing_routes,
                         airspace_zones,
-                    ),
+                    )
+                    + delay_s * self.settings.route_delay_penalty,
                     candidate,
                     eta,
                 )
@@ -235,7 +289,7 @@ class RoutePlanner:
             return FlightPlan(route=route, slot=slot)
         raise RoutePlanningError("No conflict-free route and landing slot found")
 
-    def _candidate_routes(self, request, destination, departure):
+    def _candidate_routes(self, request, destination, departure, *, airborne=False):
         speed = max(15.0, min(request.speed_capability, self.settings.cruise_speed_ms))
         altitudes = (150.0, 195.0, 240.0, 285.0, 330.0, 375.0)
         doglegs = (-0.16, 0.16, -0.30, 0.30, -0.48, 0.48, -0.66, 0.66)
@@ -243,7 +297,11 @@ class RoutePlanner:
         # slightly offset lane. We exhaust those zero-delay options first (so the
         # demo keeps taxis moving) and only then start delaying take-off, per the
         # concept's resolution order: delay -> altitude -> speed -> reroute.
-        delays = (0, 0.15, 0.3, 0.5, 0.75, 1, 1.5, 2, 3, 4, 5, 6, 8, 10, 14, 18, 20)
+        # An airborne taxi cannot wait, so it only ever gets zero-delay candidates
+        # (deconflicted by altitude/lane, never by holding it in the air).
+        delays = (0,) if airborne else (
+            0, 0.15, 0.3, 0.5, 0.75, 1, 1.5, 2, 3, 4, 5, 6, 8, 10, 14, 18, 20
+        )
         for delay in delays:
             if delay > self.settings.max_route_delay_minutes:
                 break
