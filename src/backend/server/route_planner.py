@@ -108,6 +108,11 @@ class RoutePlanner:
             for cell in self.store.state["weather"].values()
             if cell.get("active", True)
         ]
+        airspace_zones = [
+            zone
+            for zone in self.store.state.get("airspace_zones", {}).values()
+            if zone.get("active", True)
+        ]
         noise_zones = [
             zone
             for zone in self.store.state["noise_zones"].values()
@@ -128,6 +133,8 @@ class RoutePlanner:
                 continue
             if self._has_conflict(candidate, existing_routes):
                 continue
+            if self._violates_no_fly(candidate, airspace_zones):
+                continue
             if not self._weather_safe(candidate, weather):
                 continue
             if not self._respects_noise_limits(
@@ -147,7 +154,13 @@ class RoutePlanner:
                     continue
             feasible.append(
                 (
-                    self._score(candidate, weather, noise_zones, existing_routes),
+                    self._score(
+                        candidate,
+                        weather,
+                        noise_zones,
+                        existing_routes,
+                        airspace_zones,
+                    ),
                     candidate,
                     eta,
                 )
@@ -224,13 +237,13 @@ class RoutePlanner:
 
     def _candidate_routes(self, request, destination, departure):
         speed = max(15.0, min(request.speed_capability, self.settings.cruise_speed_ms))
-        altitudes = (150.0, 210.0, 270.0, 330.0)
-        doglegs = (-0.22, 0.22, -0.38, 0.38)
+        altitudes = (150.0, 195.0, 240.0, 285.0, 330.0, 375.0)
+        doglegs = (-0.16, 0.16, -0.30, 0.30, -0.48, 0.48, -0.66, 0.66)
         # 4D corridors mean two taxis can share a path at a different altitude or
         # slightly offset lane. We exhaust those zero-delay options first (so the
         # demo keeps taxis moving) and only then start delaying take-off, per the
         # concept's resolution order: delay -> altitude -> speed -> reroute.
-        delays = (0, 1, 2, 3, 4, 6, 8, 10, 14, 18, 20)
+        delays = (0, 0.15, 0.3, 0.5, 0.75, 1, 1.5, 2, 3, 4, 5, 6, 8, 10, 14, 18, 20)
         for delay in delays:
             if delay > self.settings.max_route_delay_minutes:
                 break
@@ -344,11 +357,29 @@ class RoutePlanner:
                 return False
         return True
 
-    def _score(self, route, weather, zones, existing):
+    def _violates_no_fly(self, route, airspace_zones):
+        return any(
+            zone.get("kind") == "nofly"
+            and self._crosses_polygon(
+                route,
+                zone.get("polygon", []),
+                zone.get("avoidance_margin_m", 0.0),
+            )
+            for zone in airspace_zones
+        )
+
+    def _score(self, route, weather, zones, existing, airspace_zones):
         score = route[-1][3] - route[0][3] + len(existing) * 2.0
         for cell in weather:
             if self._crosses_circle(route, cell["center"], cell["radius_m"]):
                 score += cell["severity"] * 1000.0
+        for zone in airspace_zones:
+            if zone.get("kind") == "restrict" and self._crosses_polygon(
+                route,
+                zone.get("polygon", []),
+                zone.get("avoidance_margin_m", 0.0),
+            ):
+                score += zone.get("penalty_weight", 150.0)
         for zone in zones:
             if self._crosses_circle(route, zone["center"], zone["radius_m"]):
                 load = sum(
@@ -370,4 +401,71 @@ class RoutePlanner:
             )
             < radius
             for start, end in zip(route, route[1:])
+        )
+
+    @classmethod
+    def _crosses_polygon(cls, route, polygon, margin_m: float = 0.0):
+        if len(polygon) < 3:
+            return False
+        for start, end in zip(route, route[1:]):
+            a = (start[0], start[1])
+            b = (end[0], end[1])
+            if cls._point_in_polygon(a, polygon) or cls._point_in_polygon(b, polygon):
+                return True
+            for first, second in zip(polygon, polygon[1:] + polygon[:1]):
+                c = (first[0], first[1])
+                d = (second[0], second[1])
+                if cls._segments_intersect(a, b, c, d):
+                    return True
+                if margin_m > 0 and cls._segment_distance(a, b, c, d) < margin_m:
+                    return True
+        return False
+
+    @staticmethod
+    def _point_in_polygon(point, polygon):
+        x, y = point
+        inside = False
+        j = len(polygon) - 1
+        for i in range(len(polygon)):
+            xi, yi = polygon[i]
+            xj, yj = polygon[j]
+            if (yi > y) != (yj > y) and x < (xj - xi) * (y - yi) / (yj - yi) + xi:
+                inside = not inside
+            j = i
+        return inside
+
+    @staticmethod
+    def _segments_intersect(a, b, c, d):
+        def orient(p, q, r):
+            return (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0])
+
+        def on_segment(p, q, r):
+            return (
+                min(p[0], r[0]) <= q[0] <= max(p[0], r[0])
+                and min(p[1], r[1]) <= q[1] <= max(p[1], r[1])
+            )
+
+        o1 = orient(a, b, c)
+        o2 = orient(a, b, d)
+        o3 = orient(c, d, a)
+        o4 = orient(c, d, b)
+        if o1 == 0 and on_segment(a, c, b):
+            return True
+        if o2 == 0 and on_segment(a, d, b):
+            return True
+        if o3 == 0 and on_segment(c, a, d):
+            return True
+        if o4 == 0 and on_segment(c, b, d):
+            return True
+        return (o1 > 0) != (o2 > 0) and (o3 > 0) != (o4 > 0)
+
+    @classmethod
+    def _segment_distance(cls, a, b, c, d):
+        if cls._segments_intersect(a, b, c, d):
+            return 0.0
+        return min(
+            point_to_segment_distance(a, c, d),
+            point_to_segment_distance(b, c, d),
+            point_to_segment_distance(c, a, b),
+            point_to_segment_distance(d, a, b),
         )

@@ -46,7 +46,7 @@ EMERGENCY_FAULT_MTBF_S: float = float(os.getenv("AIR2_FAULT_MTBF_S", "1200"))
 BATTERY_RECHARGE_PER_S: float = 2.5     # % per second while parked on a stand
 REDISPATCH_MIN_BATTERY_PCT: float = 55.0  # wait until charged this much before flying again
 DISPATCH_RETRY_S: float = 4.0           # backoff before retrying a rejected route request
-PARKED_DWELL_S: float = 3.0             # minimum time parked before considering a new trip
+PARKED_DWELL_S: float = 1.0             # minimum time parked before considering a new trip
 
 # --- Simulation tick ---
 SIM_TICK_S: float = 0.1                 # flight-loop resolution

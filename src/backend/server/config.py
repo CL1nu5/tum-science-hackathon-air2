@@ -12,16 +12,16 @@ class Settings:
         self.port = int(os.getenv("AIR2_PORT", "8000"))
         self.log_level = os.getenv("AIR2_LOG_LEVEL", "info")
 
-        self.route_horizontal_margin_m = 120.0
-        self.route_vertical_margin_m = 45.0
-        self.route_time_buffer_s = 15.0
-        self.route_sample_interval_s = 2.0
+        self.route_horizontal_margin_m = 50.0
+        self.route_vertical_margin_m = 20.0
+        self.route_time_buffer_s = 5.0
+        self.route_sample_interval_s = 1.5
         self.route_lease_seconds = 180
         self.route_planning_timeout_s = 5.0
         self.max_route_delay_minutes = 20
 
-        self.pad_occupancy_seconds = 22
-        self.pad_buffer_seconds = 6
+        self.pad_occupancy_seconds = 14
+        self.pad_buffer_seconds = 4
         self.slot_lease_seconds = 180
 
         self.heartbeat_interval_s = 2.0
