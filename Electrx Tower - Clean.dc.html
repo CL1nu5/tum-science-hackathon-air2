@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<script>
+  (() => {
+    try {
+      const saved = localStorage.getItem('electrx-theme');
+      const theme = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.dataset.theme = theme;
+    } catch (_) {
+      document.documentElement.dataset.theme = 'light';
+    }
+  })();
+</script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#eef1f5;font-family:'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-thumb{background:#d2d9e1;border-radius:4px}
+  ::-webkit-scrollbar-thumb:hover{background:#bcc6d1}
+  ::-webkit-scrollbar-track{background:transparent}
+  @keyframes exPulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .theme-toggle{width:34px;height:34px;display:grid;place-items:center;flex:none;border:1px solid #e3e7ec;border-radius:8px;background:#f6f8fb;color:#33425a;cursor:pointer;font:600 16px/1 'IBM Plex Sans',sans-serif;transition:background .15s,border-color .15s,color .15s,transform .15s}
+  .theme-toggle:hover{background:#eef4ff;border-color:#cddbf2;color:#2f6df0}
+  .theme-toggle:active{transform:scale(.94)}
+  .theme-toggle:focus-visible{outline:2px solid #2f6df0;outline-offset:2px}
+
+  html[data-theme="dark"],html[data-theme="dark"] body{background:#0b1018;color-scheme:dark}
+  html[data-theme="dark"] ::-webkit-scrollbar-thumb{background:#334252}
+  html[data-theme="dark"] ::-webkit-scrollbar-thumb:hover{background:#46586a}
+  html[data-theme="dark"] .theme-toggle{background:#17212d;border-color:#2a3745;color:#dce6f2}
+  html[data-theme="dark"] .theme-toggle:hover{background:#1d2a39;border-color:#3a4d61;color:#7ca7ff}
+
+  html[data-theme="dark"] [style*="background:#eef1f5"]{background:#0b1018!important}
+  html[data-theme="dark"] [style*="background:#ffffff"]{background:#111923!important}
+  html[data-theme="dark"] [style*="background:#fafbfc"]{background:#0f1720!important}
+  html[data-theme="dark"] [style*="background:#f6f8fb"]{background:#17212d!important}
+  html[data-theme="dark"] [style*="background:#f7f9fb"]{background:#151f2b!important}
+  html[data-theme="dark"] [style*="background:#f3f7ff"]{background:#17243a!important}
+  html[data-theme="dark"] [style*="background:#eaedf1"]{background:#0c131c!important}
+  html[data-theme="dark"] [style*="background:#eef1f4"]{background:#253240!important}
+  html[data-theme="dark"] [style*="background:#eaf6f0"]{background:#122a24!important}
+  html[data-theme="dark"] [style*="background:#eef4ff"]{background:#16243a!important}
+  html[data-theme="dark"] [style*="background:#f5f8fe"]{background:#131e2d!important}
+  html[data-theme="dark"] [style*="background:#fdf1f0"],
+  html[data-theme="dark"] [style*="background:#fdf4f3"]{background:#2b181a!important}
+  html[data-theme="dark"] [style*="background:#f1f8f4"]{background:#12251f!important}
+  html[data-theme="dark"] [style*="background:rgba(255,255,255,.94)"],
+  html[data-theme="dark"] [style*="background:rgba(255,255,255,.9)"],
+  html[data-theme="dark"] [style*="background:rgba(255,255,255,.86)"]{background:rgba(17,25,35,.92)!important}
+
+  html[data-theme="dark"] [style*="color:#16263b"]{color:#f3f7fb!important}
+  html[data-theme="dark"] [style*="color:#1d2a3a"]{color:#edf3fa!important}
+  html[data-theme="dark"] [style*="color:#243244"]{color:#dce6f2!important}
+  html[data-theme="dark"] [style*="color:#33425a"],
+  html[data-theme="dark"] [style*="color:#34425a"]{color:#c8d5e3!important}
+  html[data-theme="dark"] [style*="color:#54616f"],
+  html[data-theme="dark"] [style*="color:#5a6878"]{color:#aebdcd!important}
+  html[data-theme="dark"] [style*="color:#6b7888"]{color:#9eafc0!important}
+  html[data-theme="dark"] [style*="color:#7e8b99"],
+  html[data-theme="dark"] [style*="color:#8a96a4"]{color:#8fa2b5!important}
+  html[data-theme="dark"] [style*="color:#9aa6b3"]{color:#7f92a6!important}
+  html[data-theme="dark"] [style*="color:#aab4c0"]{color:#718499!important}
+
+  html[data-theme="dark"] [style*="border-bottom:1px solid #e3e7ec"],
+  html[data-theme="dark"] [style*="border-top:1px solid #e3e7ec"],
+  html[data-theme="dark"] [style*="border-right:1px solid #e3e7ec"],
+  html[data-theme="dark"] [style*="border-left:1px solid #e3e7ec"]{border-color:#263341!important}
+  html[data-theme="dark"] [style*="border-bottom:1px solid #eef1f4"],
+  html[data-theme="dark"] [style*="border:1px solid #eef1f4"]{border-color:#202d3a!important}
+  html[data-theme="dark"] [style*="border:1px solid #e7ebf0"],
+  html[data-theme="dark"] [style*="border:1px solid #dce2e8"]{border-color:#2a3846!important}
+  html[data-theme="dark"] [style*="background:#e7eaef"]{background:#2a3745!important}
+  html[data-theme="dark"] [style*="border-bottom:1px solid #f1f3f6"]{border-color:#1c2834!important}
+  html[data-theme="dark"] [style*="box-shadow:0 4px 16px"]{box-shadow:0 7px 24px rgba(0,0,0,.28)!important}
+  html[data-theme="dark"] [style*="width:11px;height:11px"][style*="border-radius:50%"]{background:#f1f5f9!important}
+</style>
+</helmet>
+<div style="height:100vh;width:100vw;display:flex;flex-direction:column;background:#eef1f5;color:#243244;font-family:'IBM Plex Sans',sans-serif;overflow:hidden">
+
+  <!-- TOP BAR -->
+  <div style="height:58px;flex:none;display:flex;align-items:center;gap:20px;padding:0 20px;background:#ffffff;border-bottom:1px solid #e3e7ec;z-index:5">
+    <div style="display:flex;align-items:center;gap:11px">
+      <div style="width:24px;height:24px;border:1.5px solid #2f6df0;transform:rotate(45deg);display:flex;align-items:center;justify-content:center"><div style="width:7px;height:7px;background:#2f6df0"></div></div>
+      <div style="display:flex;flex-direction:column;line-height:1.1">
+        <span style="font-size:14px;font-weight:700;letter-spacing:2px;color:#16263b">ELECTRX</span>
+        <span style="font-size:8.5px;font-weight:500;letter-spacing:2.5px;color:#9aa6b3;font-family:'IBM Plex Mono',monospace">TOWER&nbsp;CONTROL</span>
+      </div>
+    </div>
+    <div style="width:1px;height:26px;background:#e7eaef"></div>
+    <div style="display:flex;flex-direction:column;line-height:1.15">
+      <span style="font-size:12px;font-weight:600;color:#33425a;letter-spacing:.3px">{{ airspaceName }}</span>
+      <span style="font-size:9px;color:#9aa6b3;font-family:'IBM Plex Mono',monospace;letter-spacing:.5px">CLASS-C UTM · EDDM TMA</span>
+    </div>
+
+    <div style="flex:1"></div>
+
+    <div style="display:flex;gap:10px;align-items:stretch">
+      <div style="display:flex;flex-direction:column;justify-content:center;padding:5px 14px;background:#f6f8fb;border:1px solid #e7ebf0;border-radius:6px;min-width:66px">
+        <span style="font-size:8px;letter-spacing:1px;color:#9aa6b3;font-family:'IBM Plex Mono',monospace">AIRBORNE</span>
+        <span style="font-size:16px;font-weight:600;color:#2f6df0;font-family:'IBM Plex Mono',monospace;line-height:1.1">{{ metrics.airborne }}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;justify-content:center;padding:5px 14px;background:#f6f8fb;border:1px solid #e7ebf0;border-radius:6px;min-width:66px">
+        <span style="font-size:8px;letter-spacing:1px;color:#9aa6b3;font-family:'IBM Plex Mono',monospace">CONFLICTS</span>
+        <span style="font-size:16px;font-weight:600;color:#d98a16;font-family:'IBM Plex Mono',monospace;line-height:1.1">{{ metrics.conflicts }}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;justify-content:center;padding:5px 14px;background:#f6f8fb;border:1px solid #e7ebf0;border-radius:6px;min-width:66px">
+        <span style="font-size:8px;letter-spacing:1px;color:#9aa6b3;font-family:'IBM Plex Mono',monospace">EMERGENCY</span>
+        <span style="font-size:16px;font-weight:600;color:{{ metrics.emColor }};font-family:'IBM Plex Mono',monospace;line-height:1.1">{{ metrics.emergencies }}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;justify-content:center;padding:5px 14px;background:#f6f8fb;border:1px solid #e7ebf0;border-radius:6px;min-width:66px">
+        <span style="font-size:8px;letter-spacing:1px;color:#9aa6b3;font-family:'IBM Plex Mono',monospace">AVG&nbsp;BATT</span>
+        <span style="font-size:16px;font-weight:600;color:#18926a;font-family:'IBM Plex Mono',monospace;line-height:1.1">{{ metrics.avgBatt }}%</span>
+      </div>
+    </div>
+    <div style="width:1px;height:26px;background:#e7eaef"></div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div style="width:8px;height:8px;border-radius:50%;background:#18926a;animation:exPulse 2.4s infinite"></div>
+      <div style="display:flex;flex-direction:column;line-height:1.1">
+        <span style="font-size:9px;color:#7e8b99;letter-spacing:.5px">TOWER LINK</span>
+        <span style="font-size:9.5px;color:#18926a;font-family:'IBM Plex Mono',monospace;font-weight:600">ONLINE · V2V</span>
+      </div>
+    </div>
+    <button type="button" class="theme-toggle" aria-label="{{ themeLabel }}" title="{{ themeLabel }}" onClick="{{ toggleTheme }}">{{ themeIcon }}</button>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:500;color:#16263b;letter-spacing:1px;min-width:100px;text-align:right">{{ clockStr }}<span style="font-size:9px;color:#9aa6b3"> UTC</span></div>
+  </div>
+
+  <!-- BODY -->
+  <div style="flex:1;display:flex;min-height:0">
+
+    <!-- LEFT: LAYERS -->
+    <div style="width:256px;flex:none;background:#ffffff;border-right:1px solid #e3e7ec;display:flex;flex-direction:column;min-height:0">
+      <div style="padding:14px 18px 11px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #eef1f4">
+        <span style="font-size:10.5px;font-weight:700;letter-spacing:1.5px;color:#5a6878;font-family:'IBM Plex Mono',monospace">DATA&nbsp;LAYERS</span>
+        <span style="font-size:9px;color:#18926a;font-family:'IBM Plex Mono',monospace;letter-spacing:.5px;background:#eaf6f0;padding:2px 7px;border-radius:10px">{{ activeLayerCount }} ON</span>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:8px 0">
+        <sc-for list="{{ groups }}" as="group" hint-placeholder-count="4">
+          <div style="padding:11px 18px 4px">
+            <span style="font-size:8.5px;font-weight:700;letter-spacing:1.5px;color:#aab4c0;font-family:'IBM Plex Mono',monospace">{{ group.name }}</span>
+          </div>
+          <sc-for list="{{ group.items }}" as="item" hint-placeholder-count="3">
+            <div onClick="{{ item.toggle }}" style="margin:2px 10px;padding:9px 11px;border-radius:8px;display:flex;align-items:center;gap:11px;cursor:pointer;background:{{ item.bg }};border:1px solid {{ item.bd }};transition:background .12s">
+              <div style="width:14px;height:14px;border-radius:4px;flex:none;border:1.5px solid {{ item.swatch }};background:{{ item.fill }};display:flex;align-items:center;justify-content:center">
+                <div style="width:5px;height:5px;border-radius:1px;background:{{ item.dot }}"></div>
+              </div>
+              <span style="flex:1;font-size:12px;color:{{ item.textColor }};font-weight:500">{{ item.label }}</span>
+              <div style="width:26px;height:15px;border-radius:8px;flex:none;background:{{ item.track }};position:relative;transition:background .15s">
+                <div style="position:absolute;top:1.5px;left:{{ item.knobLeft }};width:11px;height:11px;border-radius:50%;background:#ffffff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:left .15s"></div>
+              </div>
+            </div>
+          </sc-for>
+        </sc-for>
+
+        <div style="height:1px;background:#eef1f4;margin:12px 14px"></div>
+        <div style="padding:4px 18px 6px">
+          <span style="font-size:8.5px;font-weight:700;letter-spacing:1.5px;color:#aab4c0;font-family:'IBM Plex Mono',monospace">AIRSPACE&nbsp;INTEGRITY</span>
+        </div>
+        <div style="padding:4px 18px 14px;display:flex;flex-direction:column;gap:12px">
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#6b7888;margin-bottom:5px"><span>Reservation coverage</span><span style="font-family:'IBM Plex Mono',monospace;color:#2f6df0">{{ integ.coverage }}%</span></div>
+            <div style="height:5px;background:#eef1f5;border-radius:3px;overflow:hidden"><div style="height:100%;width:{{ integ.coverage }}%;background:#2f6df0;border-radius:3px"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#6b7888;margin-bottom:5px"><span>Energy reserve margin</span><span style="font-family:'IBM Plex Mono',monospace;color:#18926a">{{ integ.reserve }}%</span></div>
+            <div style="height:5px;background:#eef1f5;border-radius:3px;overflow:hidden"><div style="height:100%;width:{{ integ.reserve }}%;background:#18926a;border-radius:3px"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#6b7888;margin-bottom:5px"><span>Acoustic load (residential)</span><span style="font-family:'IBM Plex Mono',monospace;color:#d98a16">{{ integ.noise }}%</span></div>
+            <div style="height:5px;background:#eef1f5;border-radius:3px;overflow:hidden"><div style="height:100%;width:{{ integ.noise }}%;background:#d98a16;border-radius:3px"></div></div>
+          </div>
+        </div>
+
+        <div style="height:1px;background:#eef1f4;margin:2px 14px 10px"></div>
+        <div style="padding:0 18px 6px">
+          <span style="font-size:8.5px;font-weight:700;letter-spacing:1.5px;color:#aab4c0;font-family:'IBM Plex Mono',monospace">VERTIPORT&nbsp;NETWORK</span>
+        </div>
+        <div style="padding:0 14px 16px;display:flex;flex-direction:column;gap:3px">
+          <sc-for list="{{ ports }}" as="p" hint-placeholder-count="10">
+            <div style="display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:6px">
+              <div style="width:8px;height:8px;border:1.5px solid #2f6df0;border-radius:2px;flex:none"></div>
+              <span style="flex:1;font-size:11px;color:#33425a;font-weight:500">{{ p.name }}</span>
+              <span style="font-size:9px;font-family:'IBM Plex Mono',monospace;color:{{ p.color }}">{{ p.free }}/{{ p.total }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <!-- CENTER: MAP -->
+    <div style="flex:1;position:relative;min-width:0;min-height:0;background:#eaedf1">
+      <div ref="{{ refMap }}" style="position:absolute;inset:0">
+        <canvas ref="{{ refCanvas }}" onClick="{{ onMapClick }}" style="position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;touch-action:none"></canvas>
+      </div>
+
+      <div style="position:absolute;top:74px;right:16px;display:flex;flex-direction:column;overflow:hidden;background:rgba(255,255,255,.94);border:1px solid #dce2e8;border-radius:8px;box-shadow:0 4px 16px rgba(30,50,80,.09)">
+        <button type="button" aria-label="Zoom in" title="Zoom in" onClick="{{ zoomIn }}" style="width:34px;height:34px;border:0;border-bottom:1px solid #e3e7ec;background:transparent;color:#33425a;font:500 21px/1 'IBM Plex Sans',sans-serif;cursor:pointer">+</button>
+        <button type="button" aria-label="Reset map view" title="Reset map view" onClick="{{ resetView }}" style="width:34px;height:27px;border:0;border-bottom:1px solid #e3e7ec;background:transparent;color:#6b7888;font:600 8px/1 'IBM Plex Mono',monospace;cursor:pointer">{{ zoomLabel }}</button>
+        <button type="button" aria-label="Zoom out" title="Zoom out" onClick="{{ zoomOut }}" style="width:34px;height:34px;border:0;background:transparent;color:#33425a;font:500 21px/1 'IBM Plex Sans',sans-serif;cursor:pointer">−</button>
+      </div>
+
+      <div style="position:absolute;top:14px;left:16px;background:rgba(255,255,255,.86);border:1px solid #e3e7ec;border-radius:8px;padding:8px 13px;backdrop-filter:blur(6px);box-shadow:0 4px 16px rgba(30,50,80,.06);pointer-events:none">
+        <div style="font-size:12px;font-weight:700;color:#16263b;letter-spacing:.3px">München Metropolitan UTM</div>
+        <div style="font-size:9px;font-family:'IBM Plex Mono',monospace;color:#8a96a4;letter-spacing:.5px;margin-top:1px">48.137°N · 11.576°E · WGS-84</div>
+      </div>
+
+      <div style="position:absolute;top:14px;right:16px;text-align:right;pointer-events:none">
+        <div style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:#7e8b99;letter-spacing:1px">LIVE&nbsp;TACTICAL&nbsp;VIEW</div>
+        <div style="font-size:9px;font-family:'IBM Plex Mono',monospace;color:#18926a;letter-spacing:1px;margin-top:3px"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#18926a;animation:exPulse 1.6s infinite;margin-right:5px"></span>{{ metrics.airborne }}&nbsp;TRACKS&nbsp;LIVE</div>
+      </div>
+
+      <div style="position:absolute;bottom:14px;left:16px;background:rgba(255,255,255,.9);border:1px solid #e3e7ec;border-radius:8px;padding:11px 13px;backdrop-filter:blur(6px);box-shadow:0 4px 16px rgba(30,50,80,.06);pointer-events:none">
+        <div style="font-size:8.5px;font-family:'IBM Plex Mono',monospace;letter-spacing:1.5px;color:#9aa6b3;margin-bottom:8px">LEGEND</div>
+        <div style="display:grid;grid-template-columns:auto auto;gap:6px 18px">
+          <div style="display:flex;align-items:center;gap:7px"><span style="width:14px;height:2px;background:#6557d6;display:inline-block"></span><span style="font-size:9.5px;color:#5a6878">4D corridor</span></div>
+          <div style="display:flex;align-items:center;gap:7px"><span style="width:8px;height:8px;background:#2f6df0;border-radius:2px;display:inline-block"></span><span style="font-size:9.5px;color:#5a6878">Air-taxi</span></div>
+          <div style="display:flex;align-items:center;gap:7px"><span style="width:9px;height:9px;border:1.5px solid #2f6df0;border-radius:2px;display:inline-block"></span><span style="font-size:9.5px;color:#5a6878">Vertiport</span></div>
+          <div style="display:flex;align-items:center;gap:7px"><span style="width:9px;height:9px;border-radius:50%;background:rgba(217,138,22,.4);display:inline-block"></span><span style="font-size:9.5px;color:#5a6878">Prepared surf.</span></div>
+          <div style="display:flex;align-items:center;gap:7px"><span style="width:9px;height:9px;border-radius:50%;background:rgba(214,70,58,.45);display:inline-block"></span><span style="font-size:9.5px;color:#5a6878">Open field</span></div>
+          <div style="display:flex;align-items:center;gap:7px"><span style="width:14px;height:2px;background:#d6463a;display:inline-block"></span><span style="font-size:9.5px;color:#5a6878">V2V conflict</span></div>
+        </div>
+      </div>
+
+      <div style="position:absolute;bottom:14px;right:16px;font-size:9px;font-family:'IBM Plex Mono',monospace;color:#8a96a4;pointer-events:none">drag to pan · scroll or pinch to zoom · click a track to inspect · © OpenStreetMap · CARTO</div>
+    </div>
+
+    <!-- RIGHT -->
+    <div style="width:344px;flex:none;background:#ffffff;border-left:1px solid #e3e7ec;display:flex;flex-direction:column;min-height:0">
+      <div style="flex:1;min-height:0;display:flex;flex-direction:column;overflow-y:auto">
+
+        <sc-if value="{{ hasSelection }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:16px 18px 15px;background:{{ sel.headBg }};border-bottom:1px solid #eef1f4">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <div style="display:flex;align-items:center;gap:11px">
+                <div style="width:34px;height:34px;border-radius:9px;background:#ffffff;border:1.5px solid {{ sel.statusColor }};display:flex;align-items:center;justify-content:center"><div style="width:10px;height:10px;background:{{ sel.statusColor }};transform:rotate(45deg)"></div></div>
+                <div style="line-height:1.2">
+                  <div style="font-size:16px;font-weight:700;color:#16263b;font-family:'IBM Plex Mono',monospace;letter-spacing:.5px">{{ sel.callsign }}</div>
+                  <div style="font-size:10px;color:#8a96a4">{{ sel.model }}</div>
+                </div>
+              </div>
+              <div style="padding:4px 11px;border-radius:6px;background:{{ sel.statusBg }};border:1px solid {{ sel.statusColor }}"><span style="font-size:9px;font-weight:700;letter-spacing:1px;color:{{ sel.statusColor }};font-family:'IBM Plex Mono',monospace">{{ sel.statusLabel }}</span></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:9px;color:#8a96a4;font-family:'IBM Plex Mono',monospace;width:34px">BATT</span>
+              <div style="flex:1;height:8px;background:#eef1f5;border-radius:4px;overflow:hidden"><div style="height:100%;width:{{ sel.batteryPct }}%;background:{{ sel.batteryColor }};border-radius:4px"></div></div>
+              <span style="font-size:13px;font-weight:700;color:{{ sel.batteryColor }};font-family:'IBM Plex Mono',monospace;width:40px;text-align:right">{{ sel.batteryPct }}%</span>
+            </div>
+          </div>
+
+          <div style="padding:14px 18px;display:grid;grid-template-columns:1fr 1fr;gap:14px 12px;border-bottom:1px solid #eef1f4">
+            <div><div style="font-size:8.5px;color:#9aa6b3;font-family:'IBM Plex Mono',monospace;letter-spacing:1px;margin-bottom:3px">GROUND SPD</div><div style="font-size:15px;color:#1d2a3a;font-family:'IBM Plex Mono',monospace">{{ sel.speed }}<span style="font-size:9px;color:#9aa6b3"> km/h</span></div></div>
+            <div><div style="font-size:8.5px;color:#9aa6b3;font-family:'IBM Plex Mono',monospace;letter-spacing:1px;margin-bottom:3px">ALTITUDE</div><div style="font-size:15px;color:#1d2a3a;font-family:'IBM Plex Mono',monospace">{{ sel.altitude }}<span style="font-size:9px;color:#9aa6b3"> m</span></div></div>
+            <div><div style="font-size:8.5px;color:#9aa6b3;font-family:'IBM Plex Mono',monospace;letter-spacing:1px;margin-bottom:3px">CORRIDOR</div><div style="font-size:13px;color:#6557d6;font-family:'IBM Plex Mono',monospace">{{ sel.corridorLabel }}</div></div>
+            <div><div style="font-size:8.5px;color:#9aa6b3;font-family:'IBM Plex Mono',monospace;letter-spacing:1px;margin-bottom:3px">SLOT STAGE</div><div style="font-size:13px;color:{{ sel.stageColor }};font-family:'IBM Plex Mono',monospace">{{ sel.slotStage }}</div></div>
+            <div><div style="font-size:8.5px;color:#9aa6b3;font-family:'IBM Plex Mono',monospace;letter-spacing:1px;margin-bottom:3px">DESTINATION</div><div style="font-size:13px;color:#1d2a3a;font-family:'IBM Plex Mono',monospace">{{ sel.destName }}</div></div>
+            <div><div style="font-size:8.5px;color:#9aa6b3;font-family:'IBM Plex Mono',monospace;letter-spacing:1px;margin-bottom:3px">ETA (slot)</div><div style="font-size:15px;color:#2f6df0;font-family:'IBM Plex Mono',monospace">{{ sel.etaStr }}</div></div>
+          </div>
+
+          <div style="padding:14px 18px;border-bottom:1px solid #eef1f4">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <span style="font-size:8.5px;color:#9aa6b3;font-family:'IBM Plex Mono',monospace;letter-spacing:1px">CONSTRAINT INDEX</span>
+              <span style="font-size:9.5px;color:{{ sel.constraintColor }};font-family:'IBM Plex Mono',monospace;font-weight:600">{{ sel.constraintLabel }}</span>
+            </div>
+            <div style="height:6px;background:#eef1f5;border-radius:3px;overflow:hidden"><div style="height:100%;width:{{ sel.constraintPct }}%;background:{{ sel.constraintColor }};border-radius:3px"></div></div>
+            <div style="font-size:10px;color:#8a96a4;margin-top:8px;line-height:1.45">{{ sel.constraintNote }}</div>
+          </div>
+
+          <div style="padding:14px 18px 16px">
+            <div style="font-size:8.5px;color:#9aa6b3;font-family:'IBM Plex Mono',monospace;letter-spacing:1px;margin-bottom:10px">REACHABLE LANDING OPTIONS<span style="color:#18926a"> · {{ sel.reachCount }}</span></div>
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <sc-for list="{{ reachOptions }}" as="opt" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:10px;padding:9px 11px;background:{{ opt.bg }};border:1px solid {{ opt.bd }};border-radius:7px">
+                  <div style="width:8px;height:8px;border-radius:50%;background:{{ opt.dot }};flex:none"></div>
+                  <span style="flex:1;font-size:11.5px;color:{{ opt.nameColor }};font-weight:500">{{ opt.name }}</span>
+                  <span style="font-size:9.5px;color:#9aa6b3;font-family:'IBM Plex Mono',monospace">{{ opt.dist }}km</span>
+                  <span style="font-size:9.5px;color:{{ opt.tagColor }};font-family:'IBM Plex Mono',monospace;width:54px;text-align:right;font-weight:600">{{ opt.tag }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ noSelection }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:15px 18px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #eef1f4">
+            <span style="font-size:10.5px;font-weight:700;letter-spacing:1.5px;color:#5a6878;font-family:'IBM Plex Mono',monospace">FLEET&nbsp;ROSTER</span>
+            <span style="font-size:9.5px;color:#9aa6b3;font-family:'IBM Plex Mono',monospace">{{ metrics.total }} tracked</span>
+          </div>
+          <div style="padding:10px 12px;display:flex;flex-direction:column;gap:6px">
+            <sc-for list="{{ fleet }}" as="t" hint-placeholder-count="10">
+              <div onClick="{{ t.select }}" style="display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:8px;cursor:pointer;background:#f7f9fb;border:1px solid #eef1f4">
+                <div style="width:9px;height:9px;border-radius:2px;background:{{ t.statusColor }};transform:rotate(45deg);flex:none"></div>
+                <span style="font-size:12px;font-family:'IBM Plex Mono',monospace;color:#33425a;font-weight:600;width:64px">{{ t.callsign }}</span>
+                <div style="flex:1;height:6px;background:#eef1f5;border-radius:3px;overflow:hidden"><div style="height:100%;width:{{ t.batteryPct }}%;background:{{ t.batteryColor }};border-radius:3px"></div></div>
+                <span style="font-size:9.5px;font-family:'IBM Plex Mono',monospace;color:{{ t.batteryColor }};width:32px;text-align:right">{{ t.batteryPct }}%</span>
+                <span style="font-size:9px;color:#aab4c0;width:36px;text-align:right;font-family:'IBM Plex Mono',monospace">{{ t.destName }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="height:196px;flex:none;border-top:1px solid #e3e7ec;display:flex;flex-direction:column;background:#fafbfc">
+        <div style="padding:11px 18px 9px;display:flex;align-items:center;gap:9px;border-bottom:1px solid #eef1f4">
+          <div style="width:6px;height:6px;border-radius:50%;background:#d98a16;animation:exPulse 1.4s infinite"></div>
+          <span style="font-size:10.5px;font-weight:700;letter-spacing:1.5px;color:#5a6878;font-family:'IBM Plex Mono',monospace">EVENT&nbsp;LOG</span>
+        </div>
+        <div style="flex:1;overflow-y:auto;padding:7px 14px 10px">
+          <sc-for list="{{ events }}" as="ev" hint-placeholder-count="6">
+            <div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid #f1f3f6">
+              <span style="font-size:9px;font-family:'IBM Plex Mono',monospace;color:#aab4c0;flex:none;padding-top:1px">{{ ev.time }}</span>
+              <div style="width:3px;flex:none;border-radius:2px;background:{{ ev.color }}"></div>
+              <span style="flex:1;font-size:10.5px;color:{{ ev.textColor }};line-height:1.4">{{ ev.text }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;},&quot;simSpeed&quot;:{&quot;editor&quot;:&quot;float&quot;,&quot;default&quot;:1,&quot;min&quot;:0.25,&quot;max&quot;:3,&quot;step&quot;:0.25,&quot;tsType&quot;:&quot;number&quot;},&quot;fleetSize&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:16,&quot;min&quot;:4,&quot;max&quot;:24,&quot;step&quot;:1,&quot;tsType&quot;:&quot;number&quot;},&quot;trackLabels&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    const storedTheme = (()=>{ try{return localStorage.getItem('electrx-theme');}catch(_){return null;} })();
+    this.isDark = storedTheme ? storedTheme==='dark' : document.documentElement.dataset.theme==='dark';
+    document.documentElement.dataset.theme=this.isDark?'dark':'light';
+    this.WORLD_W = 1400; this.WORLD_H = 900;
+    this.C = {
+      blue:'#2f6df0', amber:'#d98a16', red:'#d6463a', green:'#18926a',
+      indigo:'#6557d6', ink:this.isDark?'#e8f0f8':'#1d2a3a', mut:this.isDark?'#91a4b8':'#8a96a4',
+      grid:'rgba(40,70,110,0.04)'
+    };
+    this.state = { layers:{
+      heatmap:true, paths:true, flow:true,
+      collisions:true, energy:true, emergency:true,
+      vertiports:true, zones:true, weather:true
+    }};
+    this.selectedId = null;
+    this.events = [];
+    this.activeConflicts = {};
+    this.pan = {x:0,y:0};
+    this.zoom = 1;
+    this.minZoom = 0.5;
+    this.maxZoom = 6;
+    this.drag = null;
+    this.pointers = new Map();
+    this.pinch = null;
+    this.suppressClick = false;
+    this.simTime = 0;
+    this.emgTimer = 10;
+    this.t = 0;
+    this.buildWorld();
+    this.initTaxis();
+    this.seedEvents();
+
+    this.refCanvas = (el)=>{ this.canvas = el; if(el) this._setupCanvas(); };
+    this.refMap = (el)=>{ this.mapEl = el; };
+    this.onMapClick = (e)=> this._handleClick(e);
+    this.zoomIn = ()=> this._zoomBy(1.65);
+    this.zoomOut = ()=> this._zoomBy(1/1.65);
+    this.resetView = ()=>{ this.zoom=1; this.pan={x:0,y:0}; this._resize(); this.forceUpdate(); };
+    this.toggleTheme = ()=>{
+      this.isDark=!this.isDark;
+      document.documentElement.dataset.theme=this.isDark?'dark':'light';
+      try{ localStorage.setItem('electrx-theme',this.isDark?'dark':'light'); }catch(_){}
+      this.tileCache.clear();
+      this.C.ink=this.isDark?'#e8f0f8':'#1d2a3a';
+      this.C.mut=this.isDark?'#91a4b8':'#8a96a4';
+      this.forceUpdate();
+    };
+  }
+
+  // ---------- WORLD (real Munich geography) ----------
+  buildWorld(){
+    this.airspaceName = 'MÜNCHEN METRO';
+    const Z=13; this.tileZ=Z;
+    const lonMin=11.440, lonMax=11.800, latMin=48.035, latMax=48.285;
+    const lon2x=(lon)=>(lon+180)/360*Math.pow(2,Z)*256;
+    const lat2y=(lat)=>{ const s=Math.sin(lat*Math.PI/180); return (0.5 - Math.log((1+s)/(1-s))/(4*Math.PI))*Math.pow(2,Z)*256; };
+    const gx0=lon2x(lonMin), gy0=lat2y(latMax);
+    const gxMax=lon2x(lonMax), gyMax=lat2y(latMin);
+    this.tileGx0=gx0; this.tileGy0=gy0;
+    this.tileCache=new Map();
+    this.WORLD_W=gxMax-gx0; this.WORLD_H=gyMax-gy0;
+    this.LL=(lon,lat)=>({x:lon2x(lon)-gx0, y:lat2y(lat)-gy0});
+    // ground metres per world px at this latitude/zoom (for distance read-outs)
+    this.mPerPx = 156543.03 * Math.cos(48.137*Math.PI/180) / Math.pow(2,Z);
+
+    // tile mosaic
+    this.mapCanvas=document.createElement('canvas');
+    this.mapCanvas.width=Math.max(1,Math.ceil(this.WORLD_W));
+    this.mapCanvas.height=Math.max(1,Math.ceil(this.WORLD_H));
+    this._mctx=this.mapCanvas.getContext('2d');
+    this._mctx.fillStyle='#eaedf1'; this._mctx.fillRect(0,0,this.mapCanvas.width,this.mapCanvas.height);
+    this.mapReady=false;
+    this._loadTiles(Z,gx0,gy0,gxMax,gyMax);
+
+    // vertiports at real Munich locations  [name, short, lat, lon, stands]
+    const vps=[
+      ['Marienplatz','MAR',48.1372,11.5756,4],
+      ['Hauptbahnhof','HBF',48.1402,11.5600,5],
+      ['Olympiapark','OLY',48.1698,11.5516,4],
+      ['Englischer Garten','ENG',48.1642,11.6020,3],
+      ['Ostbahnhof','OST',48.1270,11.6048,4],
+      ['Messe Riem','MES',48.1351,11.6880,4],
+      ['Fröttmaning','FRÖ',48.2150,11.6247,3],
+      ['Nymphenburg','NYM',48.1583,11.5033,3],
+      ['Westpark','WES',48.1185,11.5277,4],
+      ['Harlaching','HAR',48.0985,11.5586,3],
+      ['Garching Forschungszentrum','GAR',48.2648,11.6715,5],
+      ['Theresienwiese','THW',48.1314,11.5498,6],
+      ['MTU Aero Engines','MTU',48.1922,11.4611,5],
+      ['Campus Martinsried','MRT',48.1082,11.4590,4],
+      ['Ludwig Bölkow Campus','LBC',48.0448,11.6632,6],
+      ['Schleißheim Palace','SLH',48.2486,11.5652,4],
+      ['BMW Parsdorf Innovation Campus','BMW',48.1427,11.7870,6],
+      ['Ismaning Broadcast Centre','IBC',48.2260,11.6830,4],
+    ];
+    this.vertiports=vps.map((v,i)=>{ const p=this.LL(v[3],v[2]); return {id:i,name:v[0],short:v[1],x:p.x,y:p.y,stands:v[4]}; });
+
+    // corridor network
+    const edgeDefs=[
+      [0,1,16],[0,2,-28],[0,3,20],[0,4,-16],[0,9,28],
+      [1,7,22],[1,8,-20],[2,6,26],[2,7,-18],[3,6,22],
+      [3,4,-14],[4,5,20],[4,9,-22],[8,9,18],[7,8,-16],
+      [6,10,28],[5,10,-34],[1,11,12],[0,11,-10],[8,11,18],
+      [7,12,20],[2,12,-24],
+      [8,13,-20],[7,13,18],
+      [9,14,24],[5,14,-28],
+      [6,15,-22],[10,15,20],
+      [5,16,26],[17,16,-30],
+      [5,17,-22],[10,17,24]
+    ];
+    this.corridors=edgeDefs.map((e,i)=>{
+      const a=this.vertiports[e[0]], b=this.vertiports[e[1]], bow=e[2];
+      const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
+      const dx=b.x-a.x, dy=b.y-a.y, len=Math.hypot(dx,dy)||1;
+      const nx=-dy/len, ny=dx/len;
+      const cx=mx+nx*bow, cy=my+ny*bow;
+      const N=44, pts=[];
+      for(let k=0;k<=N;k++){ const u=k/N, om=1-u;
+        pts.push({ x:om*om*a.x+2*om*u*cx+u*u*b.x, y:om*om*a.y+2*om*u*cy+u*u*b.y }); }
+      let L=0; for(let k=1;k<pts.length;k++) L+=Math.hypot(pts[k].x-pts[k-1].x, pts[k].y-pts[k-1].y);
+      return {id:i, a:e[0], b:e[1], pts, len:L, label:'C-'+String(i+1).padStart(2,'0')};
+    });
+    this.adj=this.vertiports.map(()=>[]);
+    this.corridors.forEach((c,i)=>{ this.adj[c.a].push(i); this.adj[c.b].push(i); });
+
+    // emergency surfaces (real parks / open ground)  [type, lat, lon, r, label]
+    const surf=[
+      ['prep',48.1730,11.5560,22,'Olympia-Lawn'],
+      ['prep',48.1095,11.6260,24,'Ostpark'],
+      ['prep',48.1720,11.5760,20,'Luitpoldpark'],
+      ['field',48.1480,11.5180,36,'Hirschgarten'],
+      ['field',48.1438,11.6960,40,'Riemer Park'],
+      ['field',48.2080,11.6080,38,'Fröttmaninger Heide'],
+    ];
+    this.surfaces=surf.map(s=>{ const p=this.LL(s[2],s[1]); return {type:s[0],x:p.x,y:p.y,r:s[3],label:s[4]}; });
+
+    // zones  [kind, lat, lon, r, label]
+    const zn=[
+      ['nofly',48.2188,11.6247,28,'NO-FLY · ARENA'],
+      ['nofly',48.1745,11.5870,24,'NO-FLY · KLINIKUM'],
+      ['restrict',48.1372,11.5756,32,'NOISE-CAP · ALTSTADT'],
+    ];
+    this.zones=zn.map(z=>{ const p=this.LL(z[2],z[1]); return {kind:z[0],x:p.x,y:p.y,r:z[3],label:z[4]}; });
+
+    // weather cell
+    const w0=this.LL(11.600,48.180); this.weather={x:w0.x,y:w0.y,vx:13,vy:5,r:88};
+
+    // residential clusters for acoustic heatmap
+    const res=[[48.162,11.586],[48.118,11.545],[48.130,11.595],[48.150,11.566],[48.110,11.595],[48.155,11.535],[48.150,11.620],[48.122,11.578],[48.168,11.602],[48.108,11.560]];
+    this.residential=res.map(r=>this.LL(r[1],r[0]));
+    this.buildHeat();
+  }
+
+  _loadTiles(Z,gx0,gy0,gxMax,gyMax){
+    const txMin=Math.floor(gx0/256), txMax=Math.floor((gxMax-1)/256);
+    const tyMin=Math.floor(gy0/256), tyMax=Math.floor((gyMax-1)/256);
+    for(let tx=txMin;tx<=txMax;tx++) for(let ty=tyMin;ty<=tyMax;ty++){
+      const dx=tx*256-gx0, dy=ty*256-gy0;
+      const img=this._getTile(tx,ty);
+      if(!img) continue;
+      const draw=()=>{ try{ this._mctx.drawImage(img,dx,dy,256,256); this.mapReady=true; }catch(e){} };
+      if(img.complete&&img.naturalWidth) draw(); else img.addEventListener('load',draw,{once:true});
+    }
+  }
+
+  _getTile(tx,ty){
+    const max=Math.pow(2,this.tileZ);
+    if(ty<0||ty>=max) return null;
+    const wrappedX=((tx%max)+max)%max;
+    const style=this.isDark?'dark':'light';
+    const key=style+'/'+this.tileZ+'/'+wrappedX+'/'+ty;
+    if(this.tileCache.has(key)) return this.tileCache.get(key);
+    const img=new Image(); img.crossOrigin='anonymous';
+    const subs=['a','b','c']; const s=subs[Math.abs(wrappedX+ty)%subs.length];
+    const tilePath=this.tileZ+'/'+wrappedX+'/'+ty;
+    img.src='https://'+s+'.basemaps.cartocdn.com/'+style+'_all/'+tilePath+'.png';
+    this.tileCache.set(key,img);
+    return img;
+  }
+
+  buildHeat(){
+    const cv=document.createElement('canvas'); cv.width=Math.ceil(this.WORLD_W); cv.height=Math.ceil(this.WORLD_H);
+    const x=cv.getContext('2d'); x.globalCompositeOperation='source-over';
+    const blob=(cx,cy,r,col,a)=>{ const g=x.createRadialGradient(cx,cy,0,cx,cy,r);
+      g.addColorStop(0,col.replace('A',a)); g.addColorStop(1,col.replace('A','0'));
+      x.fillStyle=g; x.beginPath(); x.arc(cx,cy,r,0,7); x.fill(); };
+    this.corridors.forEach(c=>{ for(let k=0;k<c.pts.length;k+=2){ const p=c.pts[k];
+      blob(p.x,p.y,58,'rgba(225,120,20,A)',0.04); } });
+    this.residential.forEach((p,i)=>{ const hot=i%3===0;
+      blob(p.x,p.y, hot?120:88, hot?'rgba(214,70,40,A)':'rgba(225,140,25,A)', hot?0.13:0.08); });
+    this.buildHeatCanvas=cv; this.heatCanvas=cv;
+  }
+
+  initTaxis(){
+    const models=['Volocon V3','Aria S5','Joby J6','Lilium L7','Midnight M2','EHang E8'];
+    const sampleFleet=[
+      {callsign:'EVX-101',model:'Volocon V3',ci:0, dir:1, u:.34,spd:21,battery:92},
+      {callsign:'EVX-102',model:'Aria S5',   ci:3, dir:-1,u:.58,spd:19,battery:76},
+      {callsign:'EVX-103',model:'Joby J6',   ci:8, dir:1, u:.42,spd:23,battery:61},
+      {callsign:'EVX-104',model:'Lilium L7', ci:11,dir:-1,u:.66,spd:20,battery:44},
+      {callsign:'EVX-105',model:'Midnight M2',ci:4,dir:1, u:.53,spd:18,battery:17,status:'emergency',emgTimer:14},
+      {callsign:'EVX-106',model:'EHang E8',  ci:6, dir:-1,u:.28,spd:22,battery:68},
+      {callsign:'EVX-107',model:'Volocon V3',ci:1, dir:1, u:.73,spd:17,battery:39},
+      {callsign:'EVX-108',model:'Aria S5',   ci:12,dir:-1,u:.47,spd:24,battery:83},
+      {callsign:'EVX-109',model:'Joby J6',   ci:9, dir:1, u:.31,spd:20,battery:55},
+      {callsign:'EVX-110',model:'Lilium L7', ci:2, dir:-1,u:.62,spd:21,battery:71},
+      {callsign:'EVX-111',model:'Midnight M2',ci:14,dir:1,u:.38,spd:19,battery:33},
+      {callsign:'EVX-112',model:'EHang E8',  ci:5, dir:-1,u:.69,spd:23,battery:88},
+      {callsign:'EVX-113',model:'Volocon V3',ci:10,dir:1, u:.51,spd:18,battery:47},
+      {callsign:'EVX-114',model:'Aria S5',   ci:7, dir:-1,u:.36,spd:22,battery:64},
+      {callsign:'EVX-115',model:'Joby J6',   ci:13,dir:1, u:.57,spd:20,battery:29},
+      {callsign:'EVX-116',model:'Lilium L7', ci:0, dir:1, u:1,  spd:21,battery:96,landed:4.5,arrivedVp:1},
+    ];
+    const n=Math.max(4,Math.min(24, this.props.fleetSize??16)); this._fleetN=this.props.fleetSize??16; this.taxis=[];
+    for(let i=0;i<n;i++){
+      const sample=sampleFleet[i]||{
+        callsign:'EVX-'+(101+i), model:models[i%models.length],
+        ci:(i*7+3)%this.corridors.length, dir:i%2?1:-1,
+        u:.16+((i*13)%68)/100, spd:17+(i*3)%8, battery:46+(i*11)%49
+      };
+      const taxi={
+        id:i, callsign:sample.callsign, model:sample.model,
+        ci:sample.ci, dir:sample.dir, u:sample.u, spd:sample.spd,
+        battery:sample.battery, status:sample.status||'normal',
+        landed:sample.landed||0, arrivedVp:sample.arrivedVp,
+        lateral:0, latTarget:0, conflict:false, yielding:false,
+        emgTimer:sample.emgTimer||0, x:0, y:0, hx:1, hy:0
+      };
+      this.taxis.push(taxi);
+      if(taxi.landed>0 && taxi.arrivedVp!=null){
+        const v=this.vertiports[taxi.arrivedVp]; taxi.x=v.x; taxi.y=v.y;
+      } else {
+        this._place(taxi);
+      }
+    }
+  }
+
+  seedEvents(){
+    const seeds=[
+      ['14:22:00','⚠ EMERGENCY · EVX-105 low energy 17% · priority route to Harlaching','#d6463a',true],
+      ['14:21:44','on pad · EVX-116 landed Hauptbahnhof · stand 3 assigned','#18926a'],
+      ['14:21:31','route reserved · EVX-104 → Messe Riem via C-12','#2f6df0'],
+      ['14:21:18','slot leased · Olympiapark T-03:48','#6557d6'],
+      ['14:21:06','V2V handshake · EVX-107 ⇄ EVX-110','#2f6df0'],
+      ['14:20:52','noise spread · corridor C-03 rebalanced','#d98a16'],
+      ['14:20:39','weather advisory · north-east cell drifting 13 m/s','#5a7fa8'],
+    ];
+    seeds.forEach(s=> this.events.push({t:s[0], text:s[1], color:s[2], important:s[3]}));
+  }
+
+  pointAt(c,u){ u=Math.max(0,Math.min(1,u)); const f=u*(c.pts.length-1); const i=Math.floor(f); const t=f-i;
+    const p0=c.pts[i], p1=c.pts[Math.min(i+1,c.pts.length-1)];
+    return {x:p0.x+(p1.x-p0.x)*t, y:p0.y+(p1.y-p0.y)*t}; }
+  tangentAt(c,u){ const e=0.01; const a=this.pointAt(c,Math.max(0,u-e)), b=this.pointAt(c,Math.min(1,u+e));
+    let dx=b.x-a.x, dy=b.y-a.y; const m=Math.hypot(dx,dy)||1; return {x:dx/m,y:dy/m}; }
+  _place(t){ const c=this.corridors[t.ci]; const p=this.pointAt(c,t.u); const tg=this.tangentAt(c,t.u);
+    const hx=tg.x*t.dir, hy=tg.y*t.dir; const m=Math.hypot(hx,hy)||1;
+    const nx=-hy/m, ny=hx/m;
+    t.x=p.x+nx*t.lateral; t.y=p.y+ny*t.lateral; t.hx=hx/m; t.hy=hy/m; }
+
+  componentDidUpdate(){ const fs=this.props.fleetSize??16;
+    if(this._fleetN!==fs){ this._fleetN=fs; this.initTaxis(); this.selectedId=null; } }
+
+  tick(dt){
+    dt *= (this.props.simSpeed??1);
+    this.t+=dt; this.simTime+=dt;
+    const Ts=this.taxis;
+    Ts.forEach(t=>{
+      if(t.landed>0){ t.landed-=dt; t.battery=Math.min(100,t.battery+dt*5);
+        if(t.landed<=0) this._depart(t); return; }
+      const c=this.corridors[t.ci];
+      const v=t.spd*(t.yielding?0.62:1);
+      t.u += (v/c.len)*dt*t.dir;
+      t.battery -= dt*(0.20 + (t.status==='emergency'?0.5:0));
+      if(t.battery<0) t.battery=0;
+      t.lateral += (t.latTarget - t.lateral)*Math.min(1,dt*3.2);
+      if(t.u>=1 || t.u<=0){ this._arrive(t); } else this._place(t);
+    });
+    Ts.forEach(t=>{ t.conflict=false; t.yielding=false; t.latTarget=0; });
+    const crit=46; const seen={}; this._pairLog=this._pairLog||{};
+    for(let i=0;i<Ts.length;i++) for(let j=i+1;j<Ts.length;j++){
+      const a=Ts[i], b=Ts[j]; if(a.landed>0||b.landed>0) continue;
+      if(a.ci===b.ci && a.dir===b.dir) continue;
+      const d=Math.hypot(a.x-b.x,a.y-b.y);
+      if(d<crit){
+        a.conflict=true; b.conflict=true;
+        const yielder = a.battery>b.battery? a : b;
+        yielder.yielding=true; yielder.latTarget=18;
+        const key=a.id<b.id? a.id+'-'+b.id : b.id+'-'+a.id; seen[key]=true;
+        if(!this.activeConflicts[key]){ this.activeConflicts[key]=this.t;
+          const last=this._pairLog[key]||-999;
+          if(this.t-last>20){ this._pairLog[key]=this.t;
+            this._log('V2V deconfliction · '+a.callsign+' ⇄ '+b.callsign+' · '+yielder.callsign+' yields lateral', '#d98a16'); }
+        }
+      }
+    }
+    Object.keys(this.activeConflicts).forEach(k=>{ if(!seen[k]) delete this.activeConflicts[k]; });
+
+    this.emgTimer-=dt;
+    if(this.emgTimer<=0){ this.emgTimer=16+Math.random()*12;
+      const cand=this.taxis.filter(t=>t.status==='normal'&&t.landed<=0);
+      if(cand.length){ const t=cand[Math.floor(Math.random()*cand.length)];
+        t.status='emergency'; t.battery=Math.min(t.battery,11+Math.random()*8); t.emgTimer=11+Math.random()*6;
+        const vp=this._nearestVp(t);
+        this._log('⚠ EMERGENCY · '+t.callsign+' low energy '+Math.round(t.battery)+'% · diverting '+vp.name,'#d6463a',true);
+      }
+    }
+    this.taxis.forEach(t=>{ if(t.status==='emergency'){ t.emgTimer-=dt;
+      if(t.emgTimer<=0){ t.status='normal'; t.battery=42+Math.random()*15;
+        this._log('resolved · '+t.callsign+' secured slot, reserve restored','#18926a'); } } });
+
+    const w=this.weather; w.x+=w.vx*dt; w.y+=w.vy*dt;
+    if(w.x>this.WORLD_W-100||w.x<100){ w.vx*=-1; this._log('weather cell drift · corridor advisories updated','#5a7fa8'); }
+    if(w.y>this.WORLD_H-100||w.y<100) w.vy*=-1;
+  }
+
+  _arrive(t){ const c=this.corridors[t.ci]; const vp = t.u>=1? c.b : c.a;
+    t.landed=2.4+Math.random()*3.2; t.arrivedVp=vp; t.lateral=0; t.latTarget=0;
+    const v=this.vertiports[vp]; t.x=v.x; t.y=v.y;
+    if(Math.random()<0.5) this._log('on pad · '+t.callsign+' landed '+v.name+' · stand assigned','#18926a'); }
+
+  _depart(t){ const vp=t.arrivedVp; const opts=this.adj[vp].filter(ci=>ci!==t.ci);
+    const pool=opts.length?opts:this.adj[vp];
+    const ci = pool[Math.floor(Math.random()*pool.length)];
+    const c=this.corridors[ci]; t.ci=ci; t.dir = c.a===vp? 1 : -1; t.u = c.a===vp? 0.001 : 0.999;
+    this._place(t); }
+
+  _nearestVp(t){ let best=this.vertiports[0], bd=1e9;
+    this.vertiports.forEach(v=>{ const d=Math.hypot(v.x-t.x,v.y-t.y); if(d<bd){bd=d;best=v;} }); return best; }
+
+  _log(text,color,important){ this.events.unshift({t:this._clock(), text, color, important});
+    if(this.events.length>40) this.events.length=40; }
+
+  _clock(){ const base=14*3600+22*60; const s=Math.floor(base+this.simTime);
+    const hh=String(Math.floor(s/3600)%24).padStart(2,'0');
+    const mm=String(Math.floor(s/60)%60).padStart(2,'0');
+    const ss=String(s%60).padStart(2,'0'); return hh+':'+mm+':'+ss; }
+
+  _setupCanvas(){ if(this._ready) return; this._ready=true;
+    this.ctx=this.canvas.getContext('2d');
+    if(!this.mapEl) this.mapEl=this.canvas.parentElement;
+    this._pointerDown=(e)=>{
+      if(e.button!==0) return;
+      this.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      if(this.pointers.size===2){
+        const pts=[...this.pointers.values()];
+        this.pinch={
+          distance:Math.hypot(pts[1].x-pts[0].x,pts[1].y-pts[0].y),
+          zoom:this.zoom
+        };
+        this.drag=null;
+        this.suppressClick=true;
+      } else {
+        this.drag={pointerId:e.pointerId,startX:e.clientX,startY:e.clientY,panX:this.pan.x,panY:this.pan.y,moved:false};
+      }
+      this.canvas.setPointerCapture?.(e.pointerId);
+      this.canvas.style.cursor='grabbing';
+    };
+    this._pointerMove=(e)=>{
+      if(this.pointers.has(e.pointerId)) this.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      if(this.pinch && this.pointers.size>=2){
+        const pts=[...this.pointers.values()];
+        const distance=Math.hypot(pts[1].x-pts[0].x,pts[1].y-pts[0].y);
+        const r=this.canvas.getBoundingClientRect();
+        const cx=(pts[0].x+pts[1].x)/2-r.left, cy=(pts[0].y+pts[1].y)/2-r.top;
+        this._setZoom(this.pinch.zoom*distance/Math.max(1,this.pinch.distance),cx,cy);
+        return;
+      }
+      if(!this.drag || this.drag.pointerId!==e.pointerId) return;
+      const dx=e.clientX-this.drag.startX, dy=e.clientY-this.drag.startY;
+      if(Math.hypot(dx,dy)>4) this.drag.moved=true;
+      this.pan.x=this.drag.panX+dx; this.pan.y=this.drag.panY+dy;
+      this._applyPan();
+    };
+    this._pointerUp=(e)=>{
+      this.pointers.delete(e.pointerId);
+      if(this.pinch){
+        this.pinch=null;
+        this.drag=null;
+        this.suppressClick=true;
+      } else if(this.drag && this.drag.pointerId===e.pointerId){
+        this.suppressClick=this.drag.moved;
+        this.drag=null;
+      }
+      this.canvas.releasePointerCapture?.(e.pointerId);
+      this.canvas.style.cursor='grab';
+    };
+    this._wheel=(e)=>{
+      e.preventDefault();
+      const r=this.canvas.getBoundingClientRect();
+      const amount=Math.exp(-e.deltaY*0.0025);
+      this._setZoom(this.zoom*amount,e.clientX-r.left,e.clientY-r.top);
+    };
+    this.canvas.addEventListener('pointerdown',this._pointerDown);
+    this.canvas.addEventListener('pointermove',this._pointerMove);
+    this.canvas.addEventListener('pointerup',this._pointerUp);
+    this.canvas.addEventListener('pointercancel',this._pointerUp);
+    this.canvas.addEventListener('wheel',this._wheel,{passive:false});
+    this._resize();
+    requestAnimationFrame(()=>this._resize());
+    const target=this.mapEl||this.canvas.parentElement;
+    if(target && window.ResizeObserver){ this._ro=new ResizeObserver(()=>this._resize()); this._ro.observe(target); }
+    let last=performance.now();
+    const loop=(now)=>{ const dt=Math.min(0.05,(now-last)/1000); last=now; this.tick(dt); this.draw(); this._raf=requestAnimationFrame(loop); };
+    this._raf=requestAnimationFrame(loop);
+    this._dom=setInterval(()=>this.forceUpdate(),250);
+  }
+  componentWillUnmount(){ if(this._raf) cancelAnimationFrame(this._raf); if(this._dom) clearInterval(this._dom); if(this._ro) this._ro.disconnect();
+    if(this.canvas){ this.canvas.removeEventListener('pointerdown',this._pointerDown); this.canvas.removeEventListener('pointermove',this._pointerMove);
+      this.canvas.removeEventListener('pointerup',this._pointerUp); this.canvas.removeEventListener('pointercancel',this._pointerUp);
+      this.canvas.removeEventListener('wheel',this._wheel); } }
+
+  _resize(){ if(!this.canvas) return; const host=this.mapEl||this.canvas.parentElement; if(!host) return;
+    const r=host.getBoundingClientRect(); if(r.width<2||r.height<2) return; const dpr=Math.min(2,window.devicePixelRatio||1);
+    const cw=r.width, ch=r.height; this.canvas.width=cw*dpr; this.canvas.height=ch*dpr;
+    this.ctx.setTransform(dpr,0,0,dpr,0,0);
+    const baseScale=Math.max(cw/this.WORLD_W, ch/this.WORLD_H); // cover the panel
+    const scale=baseScale*this.zoom;
+    const baseOx=(cw-this.WORLD_W*scale)/2, baseOy=(ch-this.WORLD_H*scale)/2;
+    this.view={scale,baseScale,baseOx,baseOy,ox:baseOx,oy:baseOy,cw,ch};
+    this._applyPan(); }
+  _applyPan(){ if(!this.view) return;
+    const v=this.view;
+    const mapW=this.WORLD_W*v.scale, mapH=this.WORLD_H*v.scale;
+    v.ox=mapW<=v.cw ? Math.max(0,Math.min(v.cw-mapW,v.baseOx+this.pan.x)) : Math.min(0,Math.max(v.cw-mapW,v.baseOx+this.pan.x));
+    v.oy=mapH<=v.ch ? Math.max(0,Math.min(v.ch-mapH,v.baseOy+this.pan.y)) : Math.min(0,Math.max(v.ch-mapH,v.baseOy+this.pan.y));
+    this.pan.x=v.ox-v.baseOx; this.pan.y=v.oy-v.baseOy;
+  }
+  _zoomBy(factor){ if(!this.view) return; this._setZoom(this.zoom*factor,this.view.cw/2,this.view.ch/2); }
+  _setZoom(nextZoom,sx,sy){ if(!this.view) return;
+    const next=Math.max(this.minZoom,Math.min(this.maxZoom,nextZoom));
+    if(Math.abs(next-this.zoom)<0.0001) return;
+    const v=this.view;
+    const wx=(sx-v.ox)/v.scale, wy=(sy-v.oy)/v.scale;
+    this.zoom=next;
+    v.scale=v.baseScale*this.zoom;
+    v.baseOx=(v.cw-this.WORLD_W*v.scale)/2;
+    v.baseOy=(v.ch-this.WORLD_H*v.scale)/2;
+    this.pan.x=sx-v.baseOx-wx*v.scale;
+    this.pan.y=sy-v.baseOy-wy*v.scale;
+    this._applyPan();
+    this.forceUpdate();
+  }
+  W2S(x,y){ const v=this.view; return {x:v.ox+x*v.scale, y:v.oy+y*v.scale}; }
+
+  _handleClick(e){ if(!this.view) return; const r=this.canvas.getBoundingClientRect();
+    if(this.suppressClick){ this.suppressClick=false; return; }
+    const sx=e.clientX-r.left, sy=e.clientY-r.top; let best=null, bd=18;
+    this.taxis.forEach(t=>{ if(t.landed>0) return; const p=this.W2S(t.x,t.y); const d=Math.hypot(p.x-sx,p.y-sy); if(d<bd){bd=d;best=t;} });
+    this.selectedId = best? best.id : null; this.forceUpdate(); }
+
+  draw(){ const ctx=this.ctx, v=this.view; if(!ctx||!v) return; const L=this.state.layers;
+    ctx.clearRect(0,0,v.cw,v.ch);
+    ctx.fillStyle=this.isDark?'#0c131c':'#eaedf1'; ctx.fillRect(0,0,v.cw,v.ch);
+    this._drawBaseMap(ctx);
+    if(L.heatmap) this._drawHeat(ctx);
+    if(L.zones) this._drawZones(ctx);
+    if(L.emergency) this._drawSurfaces(ctx);
+    if(L.weather) this._drawWeather(ctx);
+    if(L.paths) this._drawCorridors(ctx);
+    if(L.flow) this._drawFlow(ctx);
+    if(L.energy) this._drawEnergy(ctx);
+    if(L.vertiports) this._drawVertiports(ctx);
+    if(L.collisions) this._drawConflicts(ctx);
+    this._drawTaxis(ctx);
+  }
+
+  _path(ctx,pts,close){ ctx.beginPath(); pts.forEach((p,i)=>{ const s=this.W2S(p.x,p.y); i?ctx.lineTo(s.x,s.y):ctx.moveTo(s.x,s.y); }); if(close)ctx.closePath(); }
+
+  _drawBaseMap(ctx){
+    const v=this.view;
+    const worldLeft=(0-v.ox)/v.scale, worldTop=(0-v.oy)/v.scale;
+    const worldRight=(v.cw-v.ox)/v.scale, worldBottom=(v.ch-v.oy)/v.scale;
+    const txMin=Math.floor((this.tileGx0+worldLeft)/256)-1;
+    const txMax=Math.floor((this.tileGx0+worldRight)/256)+1;
+    const tyMin=Math.floor((this.tileGy0+worldTop)/256)-1;
+    const tyMax=Math.floor((this.tileGy0+worldBottom)/256)+1;
+    ctx.save(); ctx.globalAlpha=1;
+    for(let tx=txMin;tx<=txMax;tx++) for(let ty=tyMin;ty<=tyMax;ty++){
+      const img=this._getTile(tx,ty); if(!img) continue;
+      const p=this.W2S(tx*256-this.tileGx0,ty*256-this.tileGy0);
+      const size=256*v.scale+0.5;
+      if(img.complete&&img.naturalWidth){
+        try{ ctx.drawImage(img,p.x,p.y,size,size); }catch(e){}
+      } else {
+        ctx.fillStyle=this.isDark?'#151f2a':'#e7ebef'; ctx.fillRect(p.x,p.y,size,size);
+      }
+    }
+    ctx.restore();
+    // soft veil so data layers read clearly over the basemap
+    ctx.save(); ctx.fillStyle=this.isDark?'rgba(5,10,16,0.22)':'rgba(246,248,251,0.18)'; ctx.fillRect(0,0,v.cw,v.ch); ctx.restore();
+  }
+
+  _drawHeat(ctx){ const tl=this.W2S(0,0), br=this.W2S(this.WORLD_W,this.WORLD_H);
+    ctx.save(); const pulse=0.92+0.08*Math.sin(this.t*1.3); ctx.globalAlpha=0.62*pulse;
+    try{ ctx.drawImage(this.heatCanvas, tl.x, tl.y, br.x-tl.x, br.y-tl.y); }catch(e){} ctx.restore(); }
+
+  _drawZones(ctx){ const C=this.C;
+    this.zones.forEach(z=>{ const s=this.W2S(z.x,z.y); const r=z.r*this.view.scale;
+      const col = z.kind==='nofly'? C.red : C.amber;
+      ctx.save();
+      ctx.beginPath(); ctx.arc(s.x,s.y,r,0,7); ctx.clip();
+      ctx.strokeStyle = z.kind==='nofly'?'rgba(214,70,58,0.14)':'rgba(217,138,22,0.13)'; ctx.lineWidth=1;
+      for(let o=-r*2;o<r*2;o+=7){ ctx.beginPath(); ctx.moveTo(s.x+o, s.y-r); ctx.lineTo(s.x+o+r*2, s.y+r); ctx.stroke(); }
+      ctx.restore();
+      ctx.save(); ctx.beginPath(); ctx.arc(s.x,s.y,r,0,7);
+      ctx.strokeStyle=col; ctx.globalAlpha=0.6; ctx.lineWidth=1.2; ctx.setLineDash([5,5]); ctx.stroke();
+      ctx.setLineDash([]); ctx.globalAlpha=1; ctx.fillStyle=col; ctx.font='600 9px IBM Plex Mono'; ctx.textAlign='center';
+      ctx.shadowColor=this.isDark?'rgba(5,10,16,0.95)':'rgba(255,255,255,0.9)'; ctx.shadowBlur=3; ctx.fillText(z.label, s.x, s.y - r - 5); ctx.restore(); });
+  }
+
+  _drawSurfaces(ctx){
+    this.surfaces.forEach(su=>{ const s=this.W2S(su.x,su.y); const r=su.r*this.view.scale;
+      const prep = su.type==='prep';
+      ctx.save();
+      ctx.beginPath(); ctx.arc(s.x,s.y,r,0,7);
+      ctx.fillStyle = prep? 'rgba(217,138,22,0.16)' : 'rgba(214,70,58,0.17)'; ctx.fill();
+      ctx.strokeStyle = prep? 'rgba(217,138,22,0.75)' : 'rgba(214,70,58,0.75)'; ctx.lineWidth=1.2; ctx.stroke();
+      ctx.strokeStyle = prep? 'rgba(170,105,12,0.95)':'rgba(170,46,38,0.95)'; ctx.lineWidth=1.6;
+      const g=r*0.42;
+      if(prep){ ctx.beginPath(); ctx.moveTo(s.x-g,s.y-g);ctx.lineTo(s.x-g,s.y+g);ctx.moveTo(s.x+g,s.y-g);ctx.lineTo(s.x+g,s.y+g);ctx.moveTo(s.x-g,s.y);ctx.lineTo(s.x+g,s.y); ctx.stroke(); }
+      else { ctx.beginPath(); ctx.moveTo(s.x-g,s.y-g);ctx.lineTo(s.x+g,s.y+g);ctx.moveTo(s.x+g,s.y-g);ctx.lineTo(s.x-g,s.y+g); ctx.stroke(); }
+      ctx.restore(); });
+  }
+
+  _drawWeather(ctx){ const w=this.weather; const s=this.W2S(w.x,w.y); const r=w.r*this.view.scale;
+    ctx.save();
+    const g=ctx.createRadialGradient(s.x,s.y,r*0.2,s.x,s.y,r);
+    g.addColorStop(0,'rgba(90,127,168,0.22)'); g.addColorStop(0.6,'rgba(110,140,175,0.11)'); g.addColorStop(1,'rgba(110,140,175,0)');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(s.x,s.y,r,0,7); ctx.fill();
+    ctx.strokeStyle='rgba(90,127,168,0.4)'; ctx.lineWidth=1; ctx.setLineDash([3,5]); ctx.beginPath(); ctx.arc(s.x,s.y,r*0.82,0,7); ctx.stroke(); ctx.setLineDash([]);
+    ctx.strokeStyle='rgba(90,127,168,0.45)'; ctx.lineWidth=1;
+    for(let i=0;i<14;i++){ const rr=r*0.7*((i*7+ (this.t*40))%100)/100;
+      const px=s.x+Math.cos(i*2.3)*rr, py=s.y+Math.sin(i*1.7)*rr; ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px-3,py+7); ctx.stroke(); }
+    ctx.fillStyle='rgba(74,107,146,0.9)'; ctx.font='600 9px IBM Plex Mono'; ctx.textAlign='center';
+    ctx.shadowColor=this.isDark?'rgba(5,10,16,0.95)':'rgba(255,255,255,0.9)'; ctx.shadowBlur=3; ctx.fillText('◍ WX CELL', s.x, s.y-r-4);
+    ctx.restore();
+  }
+
+  _drawCorridors(ctx){
+    this.corridors.forEach(c=>{
+      ctx.save(); this._path(ctx,c.pts,false);
+      ctx.strokeStyle='rgba(101,87,214,0.12)'; ctx.lineWidth=Math.max(7,16*this.view.scale); ctx.lineCap='round'; ctx.lineJoin='round'; ctx.stroke();
+      this._path(ctx,c.pts,false);
+      ctx.strokeStyle='rgba(101,87,214,0.55)'; ctx.lineWidth=1.2; ctx.setLineDash([2,5]); ctx.stroke(); ctx.setLineDash([]);
+      ctx.restore();
+    });
+  }
+
+  _drawFlow(ctx){
+    this.corridors.forEach(c=>{
+      let net=0,cnt=0; this.taxis.forEach(t=>{ if(t.ci===c.id&&t.landed<=0){ net+=t.dir; cnt++; } });
+      if(cnt===0) net=1; const dir=net>=0?1:-1;
+      const reps=5;
+      for(let i=0;i<reps;i++){ let u=((this.t*0.09)+i/reps)%1; if(dir<0) u=1-u;
+        const p=this.pointAt(c,u); const tg=this.tangentAt(c,u); const s=this.W2S(p.x,p.y);
+        const ang=Math.atan2(tg.y*dir,tg.x*dir);
+        ctx.save(); ctx.translate(s.x,s.y); ctx.rotate(ang);
+        ctx.fillStyle='rgba(47,109,240,0.6)'; ctx.beginPath();
+        ctx.moveTo(5,0); ctx.lineTo(-3,3.2); ctx.lineTo(-3,-3.2); ctx.closePath(); ctx.fill(); ctx.restore();
+      }
+    });
+  }
+
+  _drawEnergy(ctx){
+    const sel=this.selectedId;
+    this.taxis.forEach(t=>{ if(t.landed>0) return; const showAll = sel===null; if(!showAll && t.id!==sel) return;
+      const s=this.W2S(t.x,t.y); const rad=(46+t.battery/100*150)*this.view.scale;
+      const col = t.battery<22? 'rgba(214,70,58,'  : t.battery<45? 'rgba(217,138,22,' : 'rgba(24,146,106,';
+      ctx.save(); ctx.beginPath(); ctx.arc(s.x,s.y,rad,0,7);
+      ctx.strokeStyle=col+(t.id===sel?'0.6)':'0.28)'); ctx.lineWidth=1; ctx.setLineDash([2,6]); ctx.stroke();
+      if(t.id===sel){ ctx.fillStyle=col+'0.06)'; ctx.fill(); }
+      ctx.setLineDash([]); ctx.restore(); });
+  }
+
+  _drawVertiports(ctx){ const C=this.C;
+    this.vertiports.forEach(v=>{ const s=this.W2S(v.x,v.y); const sc=this.view.scale;
+      const occ=this.taxis.filter(t=>t.landed>0&&t.arrivedVp===v.id).length;
+      const free=Math.max(0,v.stands-occ);
+      const fin=this.taxis.some(t=>t.landed<=0&&this._etaTo(t)<24&&this._destVp(t)===v.id);
+      ctx.save();
+      for(let i=0;i<v.stands;i++){ const ang=(i/v.stands)*Math.PI*2 - Math.PI/2; const rr=18+9;
+        const px=s.x+Math.cos(ang)*rr, py=s.y+Math.sin(ang)*rr;
+        ctx.beginPath(); ctx.arc(px,py,2.6,0,7); ctx.fillStyle= i<occ? C.amber : 'rgba(47,109,240,0.6)'; ctx.fill(); }
+      const pr=11;
+      if(fin){ ctx.beginPath(); ctx.arc(s.x,s.y,pr+7+2*Math.sin(this.t*4),0,7); ctx.strokeStyle='rgba(217,138,22,0.65)'; ctx.lineWidth=1.4; ctx.stroke(); }
+      ctx.beginPath(); ctx.rect(s.x-pr,s.y-pr,pr*2,pr*2);
+      ctx.fillStyle=this.isDark?'#111923':'#ffffff'; ctx.fill(); ctx.strokeStyle=C.blue; ctx.lineWidth=2; ctx.stroke();
+      ctx.strokeStyle=C.blue; ctx.lineWidth=1.7; const g=pr*0.42;
+      ctx.beginPath(); ctx.moveTo(s.x-g,s.y-g);ctx.lineTo(s.x-g,s.y+g);ctx.moveTo(s.x+g,s.y-g);ctx.lineTo(s.x+g,s.y+g);ctx.moveTo(s.x-g,s.y);ctx.lineTo(s.x+g,s.y); ctx.stroke();
+      ctx.textAlign='center'; ctx.shadowColor=this.isDark?'rgba(5,10,16,0.98)':'rgba(255,255,255,0.95)'; ctx.shadowBlur=4;
+      ctx.fillStyle=this.isDark?'#e5edf6':'#16263b'; ctx.font='700 11px IBM Plex Sans'; ctx.fillText(v.name, s.x, s.y+pr+15);
+      ctx.fillStyle=free>0?'rgba(24,146,106,0.95)':'rgba(214,70,58,0.95)'; ctx.font='500 9px IBM Plex Mono';
+      ctx.fillText(free+'/'+v.stands+' stands', s.x, s.y+pr+27);
+      ctx.restore();
+    });
+  }
+
+  _drawConflicts(ctx){
+    Object.keys(this.activeConflicts).forEach(k=>{ const ids=k.split('-').map(Number);
+      const a=this.taxis[ids[0]], b=this.taxis[ids[1]]; if(!a||!b||a.landed>0||b.landed>0) return;
+      const pa=this.W2S(a.x,a.y), pb=this.W2S(b.x,b.y);
+      ctx.save(); ctx.strokeStyle='rgba(214,70,58,0.75)'; ctx.lineWidth=1.2; ctx.setLineDash([4,4]); ctx.lineDashOffset=-this.t*14;
+      ctx.beginPath(); ctx.moveTo(pa.x,pa.y); ctx.lineTo(pb.x,pb.y); ctx.stroke(); ctx.setLineDash([]);
+      const mx=(pa.x+pb.x)/2, my=(pa.y+pb.y)/2;
+      ctx.fillStyle=this.isDark?'#111923':'#ffffff'; ctx.strokeStyle='rgba(214,70,58,0.9)';
+      ctx.font='600 8px IBM Plex Mono'; const tw=ctx.measureText('V2V').width+8;
+      ctx.fillRect(mx-tw/2,my-7,tw,12); ctx.strokeRect(mx-tw/2,my-7,tw,12);
+      ctx.fillStyle='#d6463a'; ctx.textAlign='center'; ctx.fillText('V2V', mx, my+2);
+      ctx.restore();
+      [a,b].forEach(t=>{ const p=this.W2S(t.x,t.y); const rr=(46*0.8)*this.view.scale*(1+0.06*Math.sin(this.t*5));
+        ctx.save(); ctx.beginPath(); ctx.arc(p.x,p.y,rr,0,7); ctx.strokeStyle='rgba(214,70,58,0.55)'; ctx.lineWidth=1; ctx.stroke(); ctx.restore(); });
+    });
+  }
+
+  _drawTaxis(ctx){ const C=this.C;
+    this.taxis.forEach(t=>{ if(t.landed>0) return; const s=this.W2S(t.x,t.y);
+      const col = t.status==='emergency'? C.red : t.conflict? C.amber : C.blue;
+      const ang=Math.atan2(t.hy,t.hx);
+      const isSel=t.id===this.selectedId;
+      ctx.save(); ctx.globalAlpha=0.28; ctx.strokeStyle=col; ctx.lineWidth=1.4;
+      ctx.beginPath(); ctx.moveTo(s.x,s.y); ctx.lineTo(s.x-t.hx*13, s.y-t.hy*13); ctx.stroke(); ctx.restore();
+      if(isSel){ ctx.save(); ctx.beginPath(); ctx.arc(s.x,s.y,12,0,7); ctx.strokeStyle=C.ink; ctx.lineWidth=1.6; ctx.stroke();
+        ctx.beginPath(); ctx.arc(s.x,s.y,12+3*Math.sin(this.t*4)+3,0,7); ctx.strokeStyle='rgba(29,42,58,0.3)'; ctx.lineWidth=1; ctx.stroke(); ctx.restore(); }
+      if(t.status==='emergency'){ ctx.save(); ctx.beginPath(); ctx.arc(s.x,s.y,10+2.5*Math.sin(this.t*6),0,7); ctx.strokeStyle='rgba(214,70,58,0.6)'; ctx.lineWidth=1.4; ctx.stroke(); ctx.restore(); }
+      ctx.save(); ctx.translate(s.x,s.y); ctx.rotate(ang);
+      ctx.fillStyle=col; ctx.beginPath(); ctx.moveTo(7,0); ctx.lineTo(-5,4.2); ctx.lineTo(-2.5,0); ctx.lineTo(-5,-4.2); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle=this.isDark?'#dce6f2':'#ffffff'; ctx.lineWidth=0.9; ctx.stroke();
+      ctx.restore();
+      if((this.props.trackLabels??true) || isSel){
+        ctx.save(); ctx.font='600 8.5px IBM Plex Mono'; ctx.textAlign='left';
+        const w=ctx.measureText(t.callsign).width;
+        ctx.fillStyle=this.isDark?'rgba(12,19,28,0.84)':'rgba(255,255,255,0.78)'; ctx.fillRect(s.x+8, s.y-10, w+5, 20);
+        ctx.fillStyle= isSel? C.ink : (this.isDark?'#c8d5e3':'#34425a');
+        ctx.fillText(t.callsign, s.x+10, s.y-2);
+        ctx.fillStyle=col; ctx.fillText(Math.round(t.battery)+'%', s.x+10, s.y+8);
+        ctx.restore();
+      }
+    });
+  }
+
+  _etaTo(t){ const c=this.corridors[t.ci]; const rem=(t.dir>0?(1-t.u):t.u)*c.len; return rem/t.spd; }
+  _destVp(t){ const c=this.corridors[t.ci]; return t.dir>0? c.b : c.a; }
+  _km(px){ return px*this.mPerPx/1000; }
+
+  toggleLayer(k){ const L={...this.state.layers}; L[k]=!L[k]; this.setState({layers:L}); }
+
+  renderVals(){
+    const L=this.state.layers;
+    const layerMeta={
+      heatmap:{label:'Noise heatmap', color:'#d98a16'},
+      paths:{label:'Flight paths & corridors', color:'#6557d6'},
+      flow:{label:'Traffic flow vectors', color:'#2f6df0'},
+      collisions:{label:'Collision / V2V conflicts', color:'#d6463a'},
+      energy:{label:'Energy reachability', color:'#18926a'},
+      emergency:{label:'Emergency surfaces', color:'#d6463a'},
+      vertiports:{label:'Vertiports & stands', color:'#2f6df0'},
+      zones:{label:'Zone types / no-fly', color:'#d98a16'},
+      weather:{label:'Weather cells', color:'#5a7fa8'},
+    };
+    const mkItem=(k)=>{ const on=L[k]; const m=layerMeta[k]; return {
+      key:k, label:m.label, toggle:()=>this.toggleLayer(k),
+      bg: on?'#f3f7ff':'#ffffff', bd: on?'#dce8fc':'#eef1f4',
+      swatch: on?m.color:'#c2cad4', fill: on?m.color+'26':'transparent', dot:on?m.color:'#c2cad4',
+      textColor: on?'#243244':'#9aa6b3',
+      track: on?m.color:'#dde2e8', knobLeft: on?'13px':'1.5px'
+    }; };
+    const groups=[
+      {name:'TRAFFIC', items:['heatmap','paths','flow'].map(mkItem)},
+      {name:'SAFETY', items:['collisions','energy','emergency'].map(mkItem)},
+      {name:'INFRASTRUCTURE', items:['vertiports','zones'].map(mkItem)},
+      {name:'ENVIRONMENT', items:['weather'].map(mkItem)},
+    ];
+    const activeLayerCount=Object.values(L).filter(Boolean).length;
+
+    const air=this.taxis? this.taxis.filter(t=>t.landed<=0).length:0;
+    const conf=Object.keys(this.activeConflicts).length;
+    const emg=this.taxis? this.taxis.filter(t=>t.status==='emergency').length:0;
+    const avg=this.taxis&&this.taxis.length? Math.round(this.taxis.reduce((a,t)=>a+t.battery,0)/this.taxis.length):0;
+    const metrics={ airborne:air, conflicts:conf, emergencies:emg, avgBatt:avg,
+      total:this.taxis?this.taxis.length:0, emColor: emg>0?'#d6463a':'#18926a' };
+
+    const integ={ coverage:100, reserve:Math.max(0,Math.min(100,avg+8)), noise: Math.min(100, 34+conf*5+ (this.taxis?Math.round(air*2.0):0)) };
+
+    const ports=(this.vertiports||[]).map(v=>{ const occ=(this.taxis||[]).filter(t=>t.landed>0&&t.arrivedVp===v.id).length;
+      const free=Math.max(0,v.stands-occ); return {name:v.name, free, total:v.stands, color: free>0?'#18926a':'#d6463a'}; });
+
+    const sTaxi = this.selectedId!=null && this.taxis ? this.taxis.find(t=>t.id===this.selectedId) : null;
+    const hasSelection=!!sTaxi; const noSelection=!sTaxi;
+    let sel=null, reachOptions=[];
+    if(sTaxi){
+      const em=sTaxi.status==='emergency';
+      const bcol = sTaxi.battery<22?'#d6463a': sTaxi.battery<45?'#d98a16':'#18926a';
+      const etaS=Math.max(0,Math.round(this._etaTo(sTaxi)));
+      const stage = sTaxi.landed>0?'on pad': etaS<24?'final approach': etaS<60?'firm·near': etaS<130?'firm·far':'tentative';
+      const stageColor = stage==='on pad'?'#18926a': stage==='final approach'?'#d98a16': stage==='firm·near'?'#2f6df0':'#6557d6';
+      const dv=this.vertiports[this._destVp(sTaxi)];
+      const opts=this.vertiports.map(v=>{ const d=this._km(Math.hypot(v.x-sTaxi.x,v.y-sTaxi.y));
+        const range=sTaxi.battery/100*16; const reach=d*1.15<range;
+        return {v,d,reach}; }).sort((a,b)=>a.d-b.d);
+      reachOptions=opts.slice(0,5).map((o,i)=>({
+        name:o.v.name, dist:o.d.toFixed(1),
+        dot:o.reach?'#18926a':'#d6463a', nameColor:o.reach?'#33425a':'#9aa6b3',
+        tag:o.reach?(i===0?'NEAREST':'in range'):'OUT',
+        tagColor:o.reach?(i===0?'#18926a':'#9aa6b3'):'#d6463a',
+        bg:o.reach?'#f1f8f4':'#fdf1f0', bd:o.reach?'#dcefe6':'#f6dcd9'
+      }));
+      const reachCount=opts.filter(o=>o.reach).length;
+      const ci=Math.round(Math.max(0,Math.min(100, (100-sTaxi.battery)*0.6 + (this.vertiports.length-reachCount)*5 + (em?22:0))));
+      const ccol= ci>66?'#d6463a': ci>40?'#d98a16':'#18926a';
+      sel={
+        callsign:sTaxi.callsign, model:sTaxi.model,
+        statusLabel: em?'EMERGENCY':'NORMAL', statusColor: em?'#d6463a':'#2f6df0',
+        statusBg: em?'#fdf1f0':'#eef4ff', headBg: em?'#fdf4f3':'#f5f8fe',
+        batteryPct:Math.round(sTaxi.battery), batteryColor:bcol,
+        speed:Math.round(sTaxi.spd*7.0), altitude: 180+ (sTaxi.id%5)*45,
+        corridorLabel:this.corridors[sTaxi.ci].label, destName:dv.name,
+        etaStr: em?'PRIORITY': (Math.floor(etaS/60)+':'+String(etaS%60).padStart(2,'0')),
+        slotStage:stage, stageColor, reachCount,
+        constraintPct:ci, constraintColor:ccol,
+        constraintLabel: ci>66?'HIGH · acts first': ci>40?'MODERATE':'LOW',
+        constraintNote: em? 'Emergency gate OPEN · may preempt a lower-priority slot if own options exhausted and victim keeps ≥1 reachable option.' : 'Normal status · holds tower-assigned route, may not preempt. Re-routes locally only inside critical radius.'
+      };
+    }
+
+    const fleet=(this.taxis||[]).map(t=>{ const bcol = t.battery<22?'#d6463a': t.battery<45?'#d98a16':'#18926a';
+      const scol = t.status==='emergency'?'#d6463a': t.conflict?'#d98a16':'#2f6df0';
+      return { id:t.id, callsign:t.callsign, batteryPct:Math.round(t.battery), batteryColor:bcol,
+        statusColor:scol, destName:this.vertiports[this._destVp(t)].short,
+        select:()=>{ this.selectedId=t.id; this.forceUpdate(); } };
+    }).sort((a,b)=>a.batteryPct-b.batteryPct);
+
+    const events=(this.events||[]).slice(0,18).map(e=>({ time:e.t, color:e.color,
+      text:e.text, textColor: e.important?'#b23a2f': '#54616f' }));
+
+    return {
+      zoomLabel:Math.round(this.zoom*100)+'%',
+      themeIcon:this.isDark?'☀':'☾',
+      themeLabel:this.isDark?'Switch to light mode':'Switch to dark mode',
+      airspaceName:this.airspaceName, clockStr:this._clock(),
+      groups, activeLayerCount, metrics, integ, ports,
+      hasSelection, noSelection, sel, reachOptions, fleet, events,
+      refCanvas:this.refCanvas, refMap:this.refMap, onMapClick:this.onMapClick,
+      toggleTheme:this.toggleTheme
+    };
+  }
+}
+</script>
+</body>
+</html>
