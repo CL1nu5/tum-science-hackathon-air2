@@ -103,8 +103,13 @@ class RouteFollower:
         dist_2d = distance_2d((cx, cy), (tx, ty))
         dist_3d = distance_3d((cx, cy, cz), (tx, ty, tz))
 
-        # Determine speed based on flight stage
-        if state.flight_stage == FlightStage.FINAL_APPROACH:
+        # Follow the reserved 4D schedule rather than only its geometry.
+        remaining_s = target.t - time.time()
+        if remaining_s > dt:
+            speed = max(0.5, min(dist_3d / remaining_s, CRUISE_SPEED_MS * 1.3))
+            if state.flight_stage == FlightStage.FINAL_APPROACH:
+                speed = min(speed, APPROACH_SPEED_MS)
+        elif state.flight_stage == FlightStage.FINAL_APPROACH:
             speed = APPROACH_SPEED_MS
         elif state.flight_stage == FlightStage.CLIMBING:
             speed = CRUISE_SPEED_MS * 0.6

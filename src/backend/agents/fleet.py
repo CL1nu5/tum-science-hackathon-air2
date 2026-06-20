@@ -131,7 +131,7 @@ def _make_demo_fleet(tower_url: str = TOWER_WS_URL) -> FleetCoordinator:
 # Entry point
 # ---------------------------------------------------------------------------
 
-if __name__ == "__main__":
+def main() -> None:
     import sys
     logging.basicConfig(
         level=logging.INFO,
@@ -146,3 +146,7 @@ if __name__ == "__main__":
         asyncio.run(coordinator.run())
     except KeyboardInterrupt:
         log.info("Fleet stopped by user")
+
+
+if __name__ == "__main__":
+    main()

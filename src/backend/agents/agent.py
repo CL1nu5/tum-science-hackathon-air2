@@ -19,11 +19,16 @@ from .config import (
     SIM_TICK_S,
     TOWER_WS_URL,
     V2V_PORT,
+    V2V_WS_PORT,
 )
 from .messages import (
     EmergencyDeclaration,
+    EmergencyResolution,
     HandshakeAck,
     HandshakeInit,
+    Heartbeat,
+    HeartbeatAck,
+    LandingClearance,
     LockGrant,
     LockRelease,
     LockRequest,
@@ -32,13 +37,13 @@ from .messages import (
     RouteAssignment,
     RouteRequest,
     StateUpdate,
+    SyncRequest,
+    SyncState,
     TowerDown,
 )
 from .priority import (
-    LandingOption,
     VertiportInfo,
     compute_priority_metric,
-    find_emergency_landing,
 )
 from .routing import RouteFollower, V2VDeconfliction, build_route_request_payload, waypoints_from_assignment
 from .state import AgentState, AgentStatus, FlightStage, SlotStage, Waypoint
@@ -84,6 +89,8 @@ class EvtolAgent:
         self._pending_destination: str | None = None
         self._emergency_handled: bool = False
         self._human_escalation_timer: float | None = None
+        self._route_granted: bool = False
+        self._slot_granted: bool = False
 
         self._register_tower_handlers()
         self._register_v2v_handlers()
@@ -117,7 +124,11 @@ class EvtolAgent:
     def _register_tower_handlers(self) -> None:
         self.tower.subscribe("ROUTE_ASSIGNMENT", self._on_route_assignment)
         self.tower.subscribe("LOCK_GRANT", self._on_lock_grant)
+        self.tower.subscribe("LANDING_CLEARANCE", self._on_landing_clearance)
+        self.tower.subscribe("EMERGENCY_RESOLUTION", self._on_emergency_resolution)
         self.tower.subscribe("PREEMPT_NOTICE", self._on_preempt_notice)
+        self.tower.subscribe("HEARTBEAT", self._on_heartbeat)
+        self.tower.subscribe("SYNC_REQUEST", self._on_sync_request)
         self.tower.subscribe("TOWER_DOWN", self._on_tower_down)
 
     async def _on_route_assignment(self, msg: RouteAssignment) -> None:
@@ -126,25 +137,74 @@ class EvtolAgent:
         self.state.assigned_route = waypoints
         self.state.current_waypoint_idx = 0
         self.state.corridor_id = msg.corridor_id
+        self.state.route_reservation_id = msg.reservation_id
+        self.state.route_revision = msg.revision
+        self.state.departure_time = msg.departure_time
         self.state.slot_time = msg.eta
-        self.state.destination_vertiport = msg.agent_id  # tower echoes back agent_id; destination is in slot_time
-        # Destination vertiport is embedded in the lock grant; for now mark as AWAITING_TAKEOFF
-        if self.state.flight_stage in (FlightStage.PARKED, FlightStage.PRE_FLIGHT):
-            self.state.flight_stage = FlightStage.AWAITING_TAKEOFF
-            self.state.slot_stage = SlotStage.TENTATIVE
+        self.state.destination_vertiport = msg.destination_vertiport
+        self._route_granted = True
+        self._maybe_mark_ready_for_takeoff()
 
     async def _on_lock_grant(self, msg: LockGrant) -> None:
         log.info(
             "[%s] Lock granted: vertiport=%s slot=%s stand=%s",
             self.state.agent_id, msg.vertiport_id, msg.slot_time, msg.stand_id,
         )
+        self.state.slot_reservation_id = msg.reservation_id
+        self.state.slot_revision = msg.revision
         self.state.slot_vertiport = msg.vertiport_id
         self.state.slot_time = msg.slot_time
         self.state.stand_id = msg.stand_id
 
-        # Advance slot stage based on current flight stage
         if self.state.slot_stage == SlotStage.NONE:
             self.state.slot_stage = SlotStage.TENTATIVE
+        self._slot_granted = True
+        self._maybe_mark_ready_for_takeoff()
+
+    async def _on_landing_clearance(self, msg: LandingClearance) -> None:
+        self.state.stand_id = msg.stand_id
+        self.state.slot_stage = SlotStage.FINAL_APPROACH
+        log.info(
+            "[%s] Landing clearance granted at %s (stand=%s standby=%s)",
+            self.state.agent_id,
+            msg.vertiport_id,
+            msg.stand_id,
+            msg.emergency_standby,
+        )
+
+    async def _on_emergency_resolution(self, msg: EmergencyResolution) -> None:
+        if msg.outcome == "HUMAN_REQUIRED":
+            self._human_escalation_timer = time.monotonic()
+            log.critical(
+                "[%s] HUMAN TAKEOVER REQUIRED: %s",
+                self.state.agent_id,
+                msg.reason,
+            )
+            return
+        if msg.target_vertiport:
+            self.state.destination_vertiport = msg.target_vertiport
+        log.warning(
+            "[%s] Emergency landing reserved at %s",
+            self.state.agent_id,
+            msg.target_vertiport,
+        )
+
+    async def _on_heartbeat(self, msg: Heartbeat) -> None:
+        await self.tower.send(HeartbeatAck(agent_id=self.state.agent_id))
+
+    async def _on_sync_request(self, msg: SyncRequest) -> None:
+        s = self.state
+        await self.tower.send(
+            SyncState(
+                agent_id=s.agent_id,
+                route_reservation_id=s.route_reservation_id,
+                route_revision=s.route_revision,
+                slot_reservation_id=s.slot_reservation_id,
+                slot_revision=s.slot_revision,
+                route=[[w.x, w.y, w.z, w.t] for w in s.assigned_route],
+                slot_stage=s.slot_stage.name,
+            )
+        )
 
     async def _on_preempt_notice(self, msg: PreemptNotice) -> None:
         log.warning(
@@ -154,8 +214,12 @@ class EvtolAgent:
         # Release our slot and replan if under the reroute limit
         if self.state.reroute_count < MAX_REROUTE_PER_FLIGHT:
             self.state.slot_stage = SlotStage.NONE
+            self.state.slot_reservation_id = None
+            self.state.slot_revision = 0
             self.state.slot_vertiport = None
             self.state.slot_time = None
+            self._slot_granted = False
+            self._route_granted = False
             self.state.reroute_count += 1
             # Re-request a route to one of the backup options
             backup = msg.backup_options[0] if msg.backup_options else None
@@ -286,7 +350,20 @@ class EvtolAgent:
                     setattr(s, k, v)
 
             # --- AWAITING_TAKEOFF → CLIMBING ---
-            if s.flight_stage == FlightStage.AWAITING_TAKEOFF and s.assigned_route:
+            departure_due = True
+            if s.departure_time:
+                try:
+                    departure_due = (
+                        datetime.now(timezone.utc)
+                        >= datetime.fromisoformat(s.departure_time)
+                    )
+                except ValueError:
+                    departure_due = True
+            if (
+                s.flight_stage == FlightStage.AWAITING_TAKEOFF
+                and s.assigned_route
+                and departure_due
+            ):
                 s.flight_stage = FlightStage.CLIMBING
                 s.speed = CRUISE_SPEED_MS * 0.6
                 log.info("[%s] Taking off", s.agent_id)
@@ -388,9 +465,7 @@ class EvtolAgent:
                 s.slot_stage = SlotStage.FIRM_NEAR
                 log.debug("[%s] Slot → FIRM_NEAR", s.agent_id)
             elif s.slot_stage == SlotStage.FIRM_NEAR and s.flight_stage == FlightStage.FINAL_APPROACH:
-                s.slot_stage = SlotStage.FINAL_APPROACH
-                log.debug("[%s] Slot → FINAL_APPROACH (hard lock begins)", s.agent_id)
-                # Request pad lock from tower
+                log.debug("[%s] Requesting final approach clearance", s.agent_id)
                 if s.slot_vertiport:
                     await self.tower.send(LockRequest(
                         agent_id=s.agent_id,
@@ -423,31 +498,6 @@ class EvtolAgent:
             self.tower.send(decl),
             self._v2v_broadcast_emergency(decl),
         )
-
-        # Run the emergency cascade to find landing
-        option = find_emergency_landing(
-            s,
-            self._vertiport_candidates,
-            occupied_slots={},      # tower will fill this in real ops
-            agent_states=self.v2v.nearby_agents,
-        )
-        if option is None:
-            log.critical("[%s] No landing option found — HUMAN TAKEOVER REQUIRED", s.agent_id)
-            self._human_escalation_timer = time.monotonic()
-            return
-
-        log.info(
-            "[%s] Emergency landing target: %s (%s) dist=%.0fm preempt=%s",
-            s.agent_id, option.vertiport_id, option.surface_type,
-            option.distance_m, option.requires_preemption,
-        )
-
-        if option.requires_preemption and option.preempt_victim_id:
-            decl.preempt_target = option.vertiport_id
-            await self.tower.send(decl)
-
-        # Re-request a route to the emergency destination
-        await self._request_route(option.vertiport_id)
 
     async def _v2v_broadcast_emergency(self, msg: EmergencyDeclaration) -> None:
         """Re-broadcast emergency declaration over UDP so nearby agents update their picture."""
@@ -487,3 +537,10 @@ class EvtolAgent:
             for v in self._vertiport_candidates
             if is_reachable(s.battery_pct, v.distance_m, speed, BATTERY_DRAIN_PER_S)
         ]
+
+    def _maybe_mark_ready_for_takeoff(self) -> None:
+        if not (self._route_granted and self._slot_granted):
+            return
+        if self.state.flight_stage in (FlightStage.PARKED, FlightStage.PRE_FLIGHT):
+            self.state.flight_stage = FlightStage.AWAITING_TAKEOFF
+            self.state.slot_stage = SlotStage.TENTATIVE

@@ -1,7 +1,24 @@
 [project]
 name = "tum-science-hackathon-air2"
 version = "0.1.0"
-description = "Add your description here"
+description = "Lightweight tower and multi-agent simulation for autonomous eVTOL coordination"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
+    "websockets>=14",
+]
+
+[project.scripts]
+air2-server = "src.backend.server.app:run"
+air2-fleet = "src.backend.agents.fleet:main"
+
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+namespaces = true
