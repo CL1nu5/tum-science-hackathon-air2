@@ -11,6 +11,7 @@ dependencies = [
 ]
 
 [project.scripts]
+air2-demo = "src.backend.demo:main"
 air2-server = "src.backend.server.app:run"
 air2-fleet = "src.backend.agents.fleet:main"
 

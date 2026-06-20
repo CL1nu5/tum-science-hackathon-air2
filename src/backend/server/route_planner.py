@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import math
 import time
 import uuid
@@ -43,7 +44,14 @@ class RoutePlanner:
 
     async def reserve_flight_plan(self, request: RouteRequest) -> FlightPlan:
         async with self.store.lock:
-            plan = self.reserve_flight_plan_locked(request)
+            # The locked planner mutates aircraft/stand state before it may fail;
+            # snapshot so a rejected request leaves no partial changes behind.
+            original = copy.deepcopy(self.store.state)
+            try:
+                plan = self.reserve_flight_plan_locked(request)
+            except Exception:
+                self.store.state = original
+                raise
             self.store.persist_locked()
             return plan
 
@@ -106,9 +114,11 @@ class RoutePlanner:
             if zone.get("active", True)
         ]
 
+        is_vertiport = destination["surface_type"] == "vertiport"
+        feasible: list[tuple[float, list, datetime]] = []
         for candidate in self._candidate_routes(request, destination, departure):
             if time.monotonic() - started > self.settings.route_planning_timeout_s:
-                raise RoutePlanningError("Route planning exceeded the hard timeout")
+                break  # honour the hard timeout; pick the best found so far
             if not self._route_has_emergency_coverage(
                 candidate,
                 infrastructure,
@@ -126,12 +136,36 @@ class RoutePlanner:
                 continue
 
             eta = datetime.fromtimestamp(candidate[-1][3], timezone.utc)
+            if is_vertiport:
+                start_at, end_at = self.slots.interval_for_eta(eta)
+                if not self.slots.is_interval_free_locked(
+                    destination["vertiport_id"],
+                    start_at,
+                    end_at,
+                    exclude_agent_id=request.agent_id,
+                ):
+                    continue
+            feasible.append(
+                (
+                    self._score(candidate, weather, noise_zones, existing_routes),
+                    candidate,
+                    eta,
+                )
+            )
+
+        if not feasible:
+            raise RoutePlanningError("No conflict-free route and landing slot found")
+
+        # The tower hands out an already-conflict-free, optimal corridor: lowest
+        # cost first (least delay, least residential noise, clearest of weather).
+        feasible.sort(key=lambda item: item[0])
+        for score, candidate, eta in feasible:
             try:
                 slot = self.slots.reserve_exact_locked(
                     agent_id=request.agent_id,
                     vertiport_id=destination["vertiport_id"],
                     eta=eta,
-                    emergency_standby=destination["surface_type"] != "vertiport",
+                    emergency_standby=not is_vertiport,
                     reroute_count=aircraft["reroute_count"],
                 )
             except SlotUnavailable:
@@ -156,9 +190,7 @@ class RoutePlanner:
                 "horizontal_margin_m": self.settings.route_horizontal_margin_m,
                 "vertical_margin_m": self.settings.route_vertical_margin_m,
                 "temporal_buffer_s": self.settings.route_time_buffer_s,
-                "score": self._score(
-                    candidate, weather, noise_zones, existing_routes
-                ),
+                "score": score,
                 "lease_expires_at": (
                     datetime.now(timezone.utc)
                     + timedelta(seconds=self.settings.route_lease_seconds)
@@ -192,26 +224,29 @@ class RoutePlanner:
 
     def _candidate_routes(self, request, destination, departure):
         speed = max(15.0, min(request.speed_capability, self.settings.cruise_speed_ms))
-        for delay in range(0, self.settings.max_route_delay_minutes + 1, 2):
+        altitudes = (150.0, 210.0, 270.0, 330.0)
+        doglegs = (-0.22, 0.22, -0.38, 0.38)
+        # 4D corridors mean two taxis can share a path at a different altitude or
+        # slightly offset lane. We exhaust those zero-delay options first (so the
+        # demo keeps taxis moving) and only then start delaying take-off, per the
+        # concept's resolution order: delay -> altitude -> speed -> reroute.
+        delays = (0, 1, 2, 3, 4, 6, 8, 10, 14, 18, 20)
+        for delay in delays:
+            if delay > self.settings.max_route_delay_minutes:
+                break
+            departs = departure + timedelta(minutes=delay)
+            for altitude in altitudes:
+                yield self._build_route(
+                    request.origin, destination, departs, altitude, speed, 0.0
+                )
+            for dogleg in doglegs:
+                yield self._build_route(
+                    request.origin, destination, departs, 150.0, speed, dogleg
+                )
+        for factor in (0.85, 1.15):
+            scaled = max(15.0, min(speed * factor, self.settings.cruise_speed_ms))
             yield self._build_route(
-                request.origin,
-                destination,
-                departure + timedelta(minutes=delay),
-                150.0,
-                speed,
-                0.0,
-            )
-        for altitude in (210.0, 270.0, 330.0):
-            yield self._build_route(
-                request.origin, destination, departure, altitude, speed, 0.0
-            )
-        for factor in (0.8, 1.15):
-            yield self._build_route(
-                request.origin, destination, departure, 150.0, speed * factor, 0.0
-            )
-        for dogleg in (-0.22, 0.22, -0.38, 0.38):
-            yield self._build_route(
-                request.origin, destination, departure, 150.0, speed, dogleg
+                request.origin, destination, departure, 150.0, scaled, 0.0
             )
 
     def _build_route(self, origin, destination, departure, altitude, speed, dogleg):
@@ -219,9 +254,11 @@ class RoutePlanner:
         tx, ty = destination["position"]
         dx, dy = tx - ox, ty - oy
         distance = math.hypot(dx, dy)
-        climb_s = max(8.0, abs(altitude - oz) / 5.0)
+        # Brisk climb/descent so taxis don't sit motionless on the 2D map while
+        # changing only altitude (~12 s for a 150 m climb).
+        climb_s = max(6.0, abs(altitude - oz) / 12.0)
         descent_s = max(
-            8.0, abs(altitude - destination.get("elevation_m", 0.0)) / 5.0
+            6.0, abs(altitude - destination.get("elevation_m", 0.0)) / 12.0
         )
         cruise_s = distance / max(speed, 1.0)
         start = departure.timestamp()
@@ -274,7 +311,7 @@ class RoutePlanner:
                 (
                     math.hypot(port["position"][0] - point[0], port["position"][1] - point[1])
                     for port in infrastructure
-                    if port["active"]
+                    if port["active"] and port.get("pad_available", True)
                 ),
                 default=math.inf,
             )

@@ -37,10 +37,13 @@ def compute_priority_metric(
 @dataclass
 class VertiportInfo:
     vertiport_id: str
-    distance_m: float          # straight-line from agent position
+    distance_m: float          # straight-line from agent position (recomputed per tick)
     has_free_slot: bool
     is_own_operator: bool
     surface_type: str          # "vertiport" | "light_red" | "dark_red" | "trailing"
+    x: float = 0.0             # projected position (metres east of reference)
+    y: float = 0.0             # projected position (metres north of reference)
+    name: str = ""
 
 
 def energy_to_reach(distance_m: float, speed_ms: float, drain_per_s: float) -> float:

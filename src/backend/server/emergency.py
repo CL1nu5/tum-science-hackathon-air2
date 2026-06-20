@@ -3,7 +3,7 @@ from __future__ import annotations
 import copy
 import math
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from ..agents.messages import EmergencyDeclaration, RouteRequest
 from .config import Settings
@@ -188,10 +188,20 @@ class EmergencyCoordinator:
                     or attacker["priority_metric"] <= victim["priority_metric"]
                 ):
                     continue
+                # The victim must keep >=1 reachable AND genuinely free landing
+                # option after losing this slot (concept guiding principle), and we
+                # hand it the nearest such option first.
                 backups = [
                     port["vertiport_id"]
-                    for port in self.state_service.reachable_locked(victim)
-                    if port["vertiport_id"] != target["vertiport_id"]
+                    for port in sorted(
+                        (
+                            p
+                            for p in self.state_service.reachable_locked(victim)
+                            if p["vertiport_id"] != target["vertiport_id"]
+                            and self._has_landing_capacity_locked(p)
+                        ),
+                        key=lambda p: self._distance(victim, p),
+                    )
                 ]
                 if backups:
                     options.append(
@@ -254,6 +264,25 @@ class EmergencyCoordinator:
             agent_id=aircraft["agent_id"],
         )
         return EmergencyDecision(outcome="HUMAN_REQUIRED", reason=reason)
+
+    def _has_landing_capacity_locked(self, port: dict) -> bool:
+        """A port is a usable fallback if a taxi could actually land and clear there."""
+        if port["surface_type"] != "vertiport":
+            return True  # emergency surfaces always accept a landing
+        if not port.get("pad_available", True):
+            return False
+        has_free_stand = any(
+            stand["vertiport_id"] == port["vertiport_id"]
+            and stand["active"]
+            and stand["occupied_by"] is None
+            for stand in self.store.state["stands"].values()
+        )
+        if has_free_stand:
+            return True
+        start, end = self.slots.interval_for_eta(
+            datetime.now(timezone.utc) + timedelta(seconds=60)
+        )
+        return self.slots.is_interval_free_locked(port["vertiport_id"], start, end)
 
     @staticmethod
     def _distance(aircraft: dict, target: dict) -> float:

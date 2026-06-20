@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
+import math
 import random
+import time
+import urllib.request
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -26,6 +30,7 @@ class AgentConfig:
     initial_battery: float = 100.0
     initial_destination: str | None = None  # vertiport ID to fly to at startup
     tower_url: str | None = None
+    destination_pool: list[str] | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -89,6 +94,7 @@ class FleetCoordinator:
             initial_battery=cfg.initial_battery,
             tower_url=cfg.tower_url or self.tower_url,
             vertiport_candidates=self.vertiport_candidates,
+            destination_pool=cfg.destination_pool,
         )
         if cfg.initial_destination:
             agent.set_destination(cfg.initial_destination)
@@ -101,30 +107,93 @@ class FleetCoordinator:
 
 
 # ---------------------------------------------------------------------------
-# Minimal demo fleet for standalone testing
+# Infrastructure discovery — learn the real vertiport network from the tower
 # ---------------------------------------------------------------------------
 
-def _make_demo_fleet(tower_url: str = TOWER_WS_URL) -> FleetCoordinator:
-    """
-    16-agent demo fleet roughly matching the frontend simulation.
-    Positions are in metres from a Munich city-centre reference point.
-    """
-    VERTIPORTS: list[VertiportInfo] = [
-        VertiportInfo("VP-01", distance_m=3200, has_free_slot=True, is_own_operator=True, surface_type="vertiport"),
-        VertiportInfo("VP-02", distance_m=4100, has_free_slot=True, is_own_operator=True, surface_type="vertiport"),
-        VertiportInfo("VP-03", distance_m=2700, has_free_slot=False, is_own_operator=True, surface_type="vertiport"),
-        VertiportInfo("VP-04", distance_m=5500, has_free_slot=True, is_own_operator=False, surface_type="vertiport"),
-        VertiportInfo("EMER-01", distance_m=1800, has_free_slot=True, is_own_operator=False, surface_type="light_red"),
-        VertiportInfo("FIELD-01", distance_m=6200, has_free_slot=True, is_own_operator=False, surface_type="dark_red"),
-    ]
+def _http_base_from_ws(tower_url: str) -> str:
+    """ws://host:port/ws/agent/{id} -> http://host:port"""
+    base = tower_url.split("/ws/")[0]
+    base = base.replace("wss://", "https://").replace("ws://", "http://")
+    return base.rstrip("/")
 
-    configs = [
-        AgentConfig(f"EVX-{100 + i}", (random.uniform(-5000, 5000), random.uniform(-5000, 5000)),
-                    initial_battery=random.uniform(60, 100),
-                    initial_destination=f"VP-0{(i % 4) + 1}")
-        for i in range(1, 17)
-    ]
-    return FleetCoordinator(configs, VERTIPORTS, tower_url)
+
+def _fetch_vertiports(http_base: str, attempts: int = 20) -> list[dict]:
+    """Poll the tower's HTTP API until the vertiport list is available."""
+    url = f"{http_base}/api/vertiports"
+    for attempt in range(attempts):
+        try:
+            with urllib.request.urlopen(url, timeout=3) as response:
+                return json.loads(response.read().decode("utf-8"))
+        except Exception as exc:  # noqa: BLE001 - tower may still be starting
+            log.info("Waiting for tower at %s (%s)", url, exc)
+            time.sleep(1.0)
+    raise RuntimeError(f"Could not reach the tower at {http_base} after {attempts} tries")
+
+
+def _candidates_from_vertiports(vertiports: list[dict]) -> list[VertiportInfo]:
+    candidates = []
+    for port in vertiports:
+        if not port.get("active", True):
+            continue
+        x, y = port["position"][0], port["position"][1]
+        candidates.append(
+            VertiportInfo(
+                vertiport_id=port["vertiport_id"],
+                distance_m=0.0,
+                has_free_slot=True,
+                is_own_operator=port.get("operator") == "AIR2",
+                surface_type=port.get("surface_type", "vertiport"),
+                x=x,
+                y=y,
+                name=port.get("name", port["vertiport_id"]),
+            )
+        )
+    return candidates
+
+
+def make_fleet(
+    tower_url: str = TOWER_WS_URL,
+    fleet_size: int = 16,
+) -> FleetCoordinator:
+    """Build a fleet from the tower's real vertiport network."""
+    http_base = _http_base_from_ws(tower_url)
+    vertiports = _fetch_vertiports(http_base)
+    candidates = _candidates_from_vertiports(vertiports)
+
+    home_pads = [c for c in candidates if c.is_own_operator and c.surface_type == "vertiport"]
+    destination_pool = [c.vertiport_id for c in home_pads]
+    if len(home_pads) < 2:
+        raise RuntimeError("Need at least two AIR2 vertiports to run a fleet")
+
+    log.info(
+        "Discovered %d vertiports (%d AIR2 pads) from the tower",
+        len(candidates), len(home_pads),
+    )
+
+    configs: list[AgentConfig] = []
+    for i in range(fleet_size):
+        home = random.choice(home_pads)
+        destination = random.choice([p for p in home_pads if p.vertiport_id != home.vertiport_id])
+        # Start parked on a real pad with a small jitter so markers don't overlap.
+        start = (
+            home.x + random.uniform(-150.0, 150.0),
+            home.y + random.uniform(-150.0, 150.0),
+        )
+        configs.append(
+            AgentConfig(
+                agent_id=f"EVX-{101 + i}",
+                initial_position=start,
+                initial_battery=random.uniform(62.0, 100.0),
+                initial_destination=destination.vertiport_id,
+                destination_pool=destination_pool,
+            )
+        )
+    return FleetCoordinator(configs, candidates, tower_url)
+
+
+# Backwards-compatible alias.
+def _make_demo_fleet(tower_url: str = TOWER_WS_URL) -> FleetCoordinator:
+    return make_fleet(tower_url=tower_url)
 
 
 # ---------------------------------------------------------------------------
@@ -138,9 +207,12 @@ def main() -> None:
         format="%(asctime)s %(levelname)-8s %(name)s %(message)s",
         datefmt="%H:%M:%S",
     )
+    # Expected V2V short-lived handshake closes shouldn't spam as errors.
+    logging.getLogger("websockets.server").setLevel(logging.CRITICAL)
 
     tower = sys.argv[1] if len(sys.argv) > 1 else TOWER_WS_URL
-    coordinator = _make_demo_fleet(tower_url=tower)
+    fleet_size = int(sys.argv[2]) if len(sys.argv) > 2 else 50
+    coordinator = make_fleet(tower_url=tower, fleet_size=fleet_size)
 
     try:
         asyncio.run(coordinator.run())

@@ -49,38 +49,44 @@ def routes_conflict(
     second_margins: CorridorMargins,
     sample_interval_s: float,
 ) -> bool:
+    """Two 4D corridors conflict if there is a moment when one aircraft is within
+    the combined spatial margin of where the other is at any time within the
+    combined temporal buffer (so passing the same point a few seconds apart still
+    counts)."""
     if len(first) < 2 or len(second) < 2:
         return False
 
     temporal = first_margins.temporal_s + second_margins.temporal_s
-    overlap_start = max(first[0][3], second[0][3]) - temporal
-    overlap_end = min(first[-1][3], second[-1][3]) + temporal
-    if overlap_start > overlap_end:
-        return False
-
     horizontal_limit = first_margins.horizontal_m + second_margins.horizontal_m
     vertical_limit = first_margins.vertical_m + second_margins.vertical_m
-    timestamp = overlap_start
-    while timestamp <= overlap_end:
+
+    step = max(sample_interval_s, 0.25)
+    # Only sample where the corridors could interact: their time overlap widened
+    # by the temporal buffer. _position_at returns None outside a route's own
+    # span, so off-route samples are simply skipped (not clamped to an endpoint).
+    window_start = max(first[0][3], second[0][3]) - temporal
+    window_end = min(first[-1][3], second[-1][3]) + temporal
+    if window_start > window_end:
+        return False
+    temporal_step = step if temporal <= 0 else min(step, temporal)
+
+    timestamp = window_start
+    while timestamp <= window_end:
         first_position = _position_at(first, timestamp)
-        if first_position is None:
-            first_position = _position_at(
-                first, min(max(timestamp, first[0][3]), first[-1][3])
-            )
-        second_position = _position_at(second, timestamp)
-        if second_position is None:
-            second_position = _position_at(
-                second, min(max(timestamp, second[0][3]), second[-1][3])
-            )
-        if first_position and second_position:
-            horizontal = math.hypot(
-                first_position[0] - second_position[0],
-                first_position[1] - second_position[1],
-            )
-            vertical = abs(first_position[2] - second_position[2])
-            if horizontal < horizontal_limit and vertical < vertical_limit:
-                return True
-        timestamp += max(sample_interval_s, 0.25)
+        if first_position is not None:
+            offset = -temporal
+            while offset <= temporal + 1e-9:
+                second_position = _position_at(second, timestamp + offset)
+                if second_position is not None:
+                    horizontal = math.hypot(
+                        first_position[0] - second_position[0],
+                        first_position[1] - second_position[1],
+                    )
+                    vertical = abs(first_position[2] - second_position[2])
+                    if horizontal < horizontal_limit and vertical < vertical_limit:
+                        return True
+                offset += temporal_step
+        timestamp += step
     return False
 
 
